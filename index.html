@@ -3,42 +3,112 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#050505">
-    <meta name="description" content="에버랜드 놀이기구와 미션을 룰렛으로 뽑아 보세요.">
-    <title>에버랜드 룰렛</title>
+    <meta name="theme-color" content="#090e10">
+    <meta name="description" content="빈 티켓에 오늘의 모험을 채워보세요. 에버랜드 놀이기구마다 펼쳐지는 특별한 뽑기 연출.">
+    <title>에버랜드 어드벤처 패스 — 오늘의 모험 뽑기</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23090e10'/%3E%3Ctext x='17' y='48' font-family='Georgia,serif' font-style='italic' font-size='53' fill='%23c4f89a'%3Ee%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
+    <script src="effects.js" defer></script>
     <script src="app.js" defer></script>
   </head>
-  <body>
-    <main class="app-screen">
-      <section class="home-screen" id="home-screen" aria-label="룰렛 종류 선택">
-        <button class="home-button ride-button" type="button" data-kind="ride">놀이기구 뽑기</button>
-        <button class="home-button mission-button" type="button" data-kind="mission">미션 뽑기</button>
-      </section>
+  <body data-stage="intro">
+    <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+      <symbol id="icon-spark" viewBox="0 0 24 24"><path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5Z"/></symbol>
+      <symbol id="icon-timber" viewBox="0 0 64 64"><path d="M5 47c10-2 9-33 23-33s11 35 31 30M5 53c11-2 9-33 23-33s11 35 31 30M13 37v20m12-34v34m13-24v24m13-10v10"/><path d="m20 12 9-2 4 7-10 2Z"/></symbol>
+      <symbol id="icon-river" viewBox="0 0 64 64"><path d="M7 43c8-7 15 8 24 0s16 8 26 0M7 54c8-7 15 8 24 0s16 8 26 0"/><ellipse cx="33" cy="32" rx="17" ry="7"/><path d="M16 32v5c0 10 34 10 34 0v-5M10 32V12m0 10c-11-2-6-13 0-7 7-10 16-2 0 7"/></symbol>
+      <symbol id="icon-thunder" viewBox="0 0 64 64"><path d="m35 5-15 25h13l-6 19 18-29H33l2-15ZM8 49l8 8m-4-24-7 8m45 0 8 8M17 56q15-9 30 0"/></symbol>
+      <symbol id="icon-neon" viewBox="0 0 64 64"><path d="M5 43c12-33 15 26 28 0S47 10 58 29M5 50c12-33 15 26 28 0S47 17 58 36M15 15l8 8m-8 0 8-8m24 31 8 8m-8 0 8-8"/></symbol>
+      <symbol id="icon-storm" viewBox="0 0 64 64"><path d="M42 9C17 2 6 22 18 38s38 12 35-4-28-21-29-6 13 20 21 11M8 50h24m6 6h17M7 13h10"/></symbol>
+      <symbol id="icon-rock" viewBox="0 0 64 64"><circle cx="32" cy="32" r="8"/><path d="m27 26-9-9m20 20 9 9M26 38l-9 9m21-21 9-9M11 11h13v13H11ZM40 40h13v13H40ZM11 40h13v13H11ZM40 11h13v13H40Z"/></symbol>
+      <symbol id="icon-twist" viewBox="0 0 64 64"><ellipse cx="32" cy="32" rx="27" ry="11" transform="rotate(40 32 32)"/><ellipse cx="32" cy="32" rx="27" ry="11" transform="rotate(-40 32 32)"/><circle cx="32" cy="32" r="5"/></symbol>
+      <symbol id="icon-magic" viewBox="0 0 64 64"><path d="M9 54 28 9h8l19 45M21 54h22M28 12 20 40h17l-3-28M7 25h7m-3-4v8m38-14h8m-4-4v8"/><path d="M20 40v5h17v-5"/></symbol>
+    </svg>
 
-      <section class="roulette-screen" id="roulette-screen" aria-label="룰렛" hidden>
-        <p class="roulette-heading" id="roulette-heading"></p>
-        <div class="roulette-stage" id="roulette-stage">
-          <div class="roulette-cylinder" id="roulette-cylinder" role="img" aria-label="돌아가는 원통형 룰렛"></div>
-          <span class="cylinder-cap cylinder-cap-left" aria-hidden="true"></span>
-          <span class="cylinder-cap cylinder-cap-right" aria-hidden="true"></span>
-          <span class="selection-window" aria-hidden="true"></span>
+    <header class="app-header">
+      <a class="brand" id="brand-home" href="#" aria-label="에버랜드 어드벤처 패스 처음으로">
+        <span class="brand-mark" aria-hidden="true">e<span>✦</span></span>
+        <span>EVERLAND<small>ADVENTURE PASS</small></span>
+      </a>
+      <div class="header-right">
+        <span class="edition">ONE TICKET. YOUR ADVENTURE.</span>
+        <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="false" aria-label="효과음 켜기"><span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i></span><span id="sound-label">소리 꺼짐</span></button>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="screen ticket-screen" id="ticket-screen" aria-labelledby="ticket-heading">
+        <div class="ticket-copy">
+          <p class="eyebrow"><span class="status-dot"></span> YOUR DAY, RANDOMLY UNLOCKED</p>
+          <h1 id="ticket-heading" tabindex="-1">한 장의 티켓,<br><span>예측불가한 하루.</span></h1>
+          <p class="intro-description" id="ticket-description">어디로 갈지는 아직 비밀.<br>뽑기 한 번으로 오늘의 첫 모험을 채워보세요.</p>
         </div>
-        <p class="spin-hint" id="spin-hint" role="status" aria-live="polite">돌아가는 중...</p>
 
-        <section class="winner-overlay" id="winner-overlay" aria-labelledby="winner-title" aria-live="polite" hidden>
-          <span class="winner-spark winner-spark-left" aria-hidden="true">✦</span>
-          <span class="winner-spark winner-spark-right" aria-hidden="true">✧</span>
-          <p class="winner-kicker" id="winner-kicker">축하해요!</p>
-          <h1 class="winner-title" id="winner-title"></h1>
-          <p class="winner-detail" id="winner-detail"></p>
-          <div class="winner-actions">
-            <button class="winner-button primary-action" id="spin-again" type="button">한 번 더 뽑기</button>
-            <button class="winner-button secondary-action" id="back-home" type="button">다른 룰렛 선택</button>
-          </div>
-        </section>
+        <div class="ticket-space">
+          <span class="orbit-label orbit-label-top" aria-hidden="true">A LITTLE CHANCE, A LOT OF ADVENTURE.</span>
+          <article class="adventure-ticket" id="adventure-ticket" aria-label="오늘의 어드벤처 티켓">
+            <div class="ticket-main">
+              <div class="ticket-topline"><span>EVERLAND</span><span class="ticket-mini-label">ADMIT ONE / 하루의 모험</span></div>
+              <div class="ticket-art" id="ticket-art">
+                <svg class="ticket-track" viewBox="0 0 560 130" fill="none" aria-hidden="true"><path d="M-20 95C70 95 63 16 138 16S196 128 278 102 321 27 370 35s59 76 125 39 60-61 89-49"/><path d="M-20 105C70 105 63 26 138 26S196 138 278 112 321 37 370 45s59 76 125 39 60-61 89-49"/><path class="track-support" d="M63 79v49m72-98v98m62-60v60m75-15v15m77-77v77m82-41v41m74-44v44"/></svg>
+                <div class="mystery-mark" id="mystery-mark" aria-hidden="true">?</div>
+                <svg class="ticket-ride-icon" id="ticket-ride-icon" aria-hidden="true" hidden><use href="#icon-timber"></use></svg>
+                <span class="ticket-art-caption" id="ticket-art-caption">THE ADVENTURE IS YOURS TO FIND</span>
+              </div>
+              <div class="ticket-slots">
+                <div class="ticket-slot ride-slot"><span class="slot-number">01</span><div><span class="slot-label">ATTRACTION / 놀이기구</span><strong id="ticket-ride-name">아직 비어 있는 모험</strong></div><span class="slot-state" id="slot-state" aria-hidden="true">✧</span></div>
+                <div class="ticket-slot mission-slot"><span class="slot-number">02</span><div><span class="slot-label">MISSION / 미션</span><strong>아직 정해지지 않았어요</strong></div><span class="slot-state" aria-hidden="true">＋</span></div>
+              </div>
+            </div>
+            <div class="ticket-stub"><span class="stub-label">YOUR<br>ADVENTURE<br>STARTS HERE</span><svg class="stub-spark" aria-hidden="true"><use href="#icon-spark"></use></svg><div class="barcode" aria-hidden="true"></div><span class="ticket-number">EV — 0001</span></div>
+            <span class="ticket-stamp" id="ticket-stamp" aria-hidden="true">ADVENTURE<br>UNLOCKED</span>
+          </article>
+          <span class="orbit-label orbit-label-bottom" aria-hidden="true">✦ NOT JUST A DESTINATION. A NEW STORY.</span>
+        </div>
+
+        <div class="ticket-actions">
+          <div class="ticket-ready"><span class="status-dot"></span><span id="ticket-ready-label">티켓에 모험을 채울 준비가 됐어요</span></div>
+          <button class="primary-button draw-button" id="draw-button" type="button" disabled><svg aria-hidden="true"><use href="#icon-spark"></use></svg><span id="draw-button-label">놀이기구 뽑기</span><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
+          <span class="draw-note">8개의 놀이기구 · 같은 확률 · 뜻밖의 즐거움</span>
+        </div>
+        <details class="attraction-pool" id="attraction-pool"><summary>어떤 모험을 만날 수 있나요? <span>＋</span></summary><div class="pool-list" id="pool-list"></div></details>
       </section>
-      <div class="confetti-layer" id="confetti-layer" aria-hidden="true"></div>
+
+      <section class="screen draw-screen" id="draw-screen" aria-labelledby="draw-heading" hidden>
+        <div class="draw-intro"><p class="eyebrow">FINDING YOUR NEXT ADVENTURE</p><h1 id="draw-heading" tabindex="-1">모험을 불러오는 중<span class="loading-dots" aria-hidden="true">...</span></h1><p>잠깐의 우연이, 오늘의 이야기가 됩니다.</p></div>
+        <div class="gacha-machine" id="gacha-machine">
+          <div class="machine-orbit orbit-one" aria-hidden="true"></div><div class="machine-orbit orbit-two" aria-hidden="true"></div>
+          <div class="machine-topline"><span>DESTINATION SELECTOR</span><span><i></i> LIVE DRAW</span></div>
+          <div class="roulette-stage" id="roulette-stage">
+            <div class="roulette-cylinder" id="roulette-cylinder" role="img" aria-label="8개 놀이기구가 회전하는 원통형 룰렛"></div>
+            <span class="cylinder-cap cylinder-cap-left" aria-hidden="true"></span><span class="cylinder-cap cylinder-cap-right" aria-hidden="true"></span>
+            <span class="selection-window" aria-hidden="true"></span><span class="reel-shade" aria-hidden="true"></span>
+          </div>
+          <div class="machine-bottomline"><span id="machine-status">SCANNING POSSIBILITIES</span><span>01 / ATTRACTION</span></div>
+          <div class="charge-track" aria-hidden="true"><span></span></div>
+        </div>
+        <p class="draw-bottom-note"><svg aria-hidden="true"><use href="#icon-spark"></use></svg>당신의 티켓에 채워질 첫 번째 목적지</p>
+      </section>
+
+      <section class="screen reveal-screen" id="reveal-screen" aria-labelledby="reveal-heading" hidden>
+        <canvas class="effects-canvas" id="effects-canvas" aria-hidden="true"></canvas>
+        <div class="reveal-vignette" aria-hidden="true"></div><div class="reveal-flare" aria-hidden="true"></div>
+        <div class="reveal-content">
+          <p class="eyebrow reveal-eyebrow"><span class="status-dot"></span> ADVENTURE UNLOCKED</p>
+          <p class="reveal-tag" id="reveal-tag"></p>
+          <h1 id="reveal-heading" tabindex="-1"></h1>
+          <p class="reveal-description" id="reveal-description"></p>
+          <div class="reveal-pass" aria-hidden="true"><svg class="reveal-pass-icon" id="reveal-pass-icon"><use href="#icon-timber"></use></svg><div><span>YOUR NEXT STOP</span><strong id="reveal-pass-name"></strong><small>01 / ATTRACTION CONFIRMED</small></div><span class="pass-check">✓</span></div>
+          <div class="reveal-actions"><button class="primary-button" id="keep-button" type="button" disabled>티켓에 담기<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button><button class="text-button" id="redraw-button" type="button" disabled>한 번 더 뽑기 <span aria-hidden="true">↻</span></button></div>
+        </div>
+        <span class="reveal-index" id="reveal-index" aria-hidden="true"></span>
+      </section>
     </main>
+
+    <footer class="app-footer"><span id="footer-caption">YOUR TICKET TO THE UNEXPECTED</span><div class="journey-steps" aria-label="티켓 진행 상황"><span class="step active" id="ride-step"><i>01</i>놀이기구</span><span class="step-connector" aria-hidden="true"></span><span class="step"><i>02</i>미션</span></div><span class="footer-number">EVERLAND / 2026</span></footer>
+    <button class="skip-button" id="skip-button" type="button" hidden>연출 건너뛰기 <span aria-hidden="true">↗</span></button>
+    <div class="opening-overlay" id="opening-overlay" aria-hidden="true"><div class="opening-spark">✦</div><span>당신의 모험을 준비하는 중</span><div class="opening-line"></div></div>
+    <p class="sr-only" id="live-status" role="status" aria-live="polite"></p>
+    <noscript><p class="noscript-message">놀이기구 뽑기를 즐기려면 브라우저에서 JavaScript를 켜주세요.</p></noscript>
   </body>
 </html>

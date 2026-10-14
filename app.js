@@ -1,169 +1,338 @@
-const choices = {
-  ride: {
-    heading: '놀이기구 룰렛',
-    kicker: '축하해요! 오늘의 놀이기구',
-    detail: '오늘의 목적지가 정해졌어요. 안전 수칙을 확인하고 즐겨보세요.',
-    entries: [
-      { name: 'T 익스프레스', label: 'T 익스프레스' },
-      { name: '아마존 익스프레스', label: '아마존 익스프레스' },
-      { name: '썬더폴스', label: '썬더폴스' },
-      { name: '롤링 엑스트레인', label: '롤링 엑스트레인' },
-      { name: '허리케인', label: '허리케인' },
-      { name: '더블락스핀', label: '더블락스핀' },
-      { name: '렛츠 트위스트', label: '렛츠 트위스트' },
-      { name: '매직스윙', label: '매직스윙' },
-    ],
-  },
-  mission: {
-    heading: '미션 룰렛',
-    kicker: '축하해요! 오늘의 미션',
-    detail: '함께하는 사람과 현장 안내를 존중하며 도전해 보세요.',
-    entries: [
-      { name: '탑승 전, 팀원 모두 동의하면 어울리는 포즈로 인증 사진 찍기', label: '포즈 인증샷' },
-      { name: '이용 전 주의사항 한 가지 확인하기', label: '안전 수칙 확인' },
-      { name: '탑승 전 기대감을 한 단어씩 나누기', label: '기대 한마디' },
-      { name: '어트랙션 테마에서 디테일 하나 찾아보기', label: '테마 디테일' },
-      { name: '이 놀이기구의 별명을 짓고 이유 말하기', label: '별명 짓기' },
-      { name: '기대되거나 기억에 남은 순간 나누기', label: '추억 나누기' },
-      { name: '주변을 방해하지 않는 짧은 응원 구호 만들기', label: '조용한 응원' },
-      { name: '팀의 오늘의 용기상 주인공 한 명 뽑기', label: '오늘의 용기상' },
-    ],
-  },
-};
+'use strict';
 
-const homeScreen = document.querySelector('#home-screen');
-const rouletteScreen = document.querySelector('#roulette-screen');
-const wheel = document.querySelector('#roulette-cylinder');
-const rouletteStage = document.querySelector('#roulette-stage');
-const heading = document.querySelector('#roulette-heading');
-const spinHint = document.querySelector('#spin-hint');
-const winnerOverlay = document.querySelector('#winner-overlay');
-const winnerKicker = document.querySelector('#winner-kicker');
-const winnerTitle = document.querySelector('#winner-title');
-const winnerDetail = document.querySelector('#winner-detail');
-const confettiLayer = document.querySelector('#confetti-layer');
-const spinAgainButton = document.querySelector('#spin-again');
-const backHomeButton = document.querySelector('#back-home');
+const rides = [
+  { name: 'T 익스프레스', theme: 'timber', tag: 'WOODEN THRILL / 숨 멎는 급강하', description: '나무 레일을 타고 하늘 끝에서 아래로. 오늘은 심장이 먼저 달려가는 모험이에요.', accent: '#ffb86b', rgb: '255, 184, 107' },
+  { name: '아마존 익스프레스', theme: 'river', tag: 'JUNGLE RIVER / 예측불가 급류', description: '물결을 따라 정글 속으로. 어느 쪽으로 흘러갈지 모르는 짜릿한 이야기가 기다려요.', accent: '#2eeac2', rgb: '46, 234, 194' },
+  { name: '썬더폴스', theme: 'thunder', tag: 'THUNDER SPLASH / 거대한 물보라', description: '고요한 물길 끝에 기다리는 짜릿한 낙하. 물보라가 터지는 순간, 모험이 시작돼요.', accent: '#a971ff', rgb: '169, 113, 255' },
+  { name: '롤링 엑스트레인', theme: 'neon', tag: 'NEON RUSH / 뒤집히는 세상', description: '빛처럼 달리고, 시야는 거꾸로. 회전하는 레일 위에서 오늘의 속도를 높여보세요.', accent: '#fe62da', rgb: '254, 98, 218' },
+  { name: '허리케인', theme: 'storm', tag: 'INTO THE STORM / 폭풍 속으로', description: '바람이 모이고, 몸이 떠오르는 순간. 한가운데로 뛰어드는 대담한 모험이 찾아왔어요.', accent: '#ffc65d', rgb: '255, 198, 93' },
+  { name: '더블락스핀', theme: 'rock', tag: 'ROCK THE SKY / 하늘을 흔들어', description: '한 번 더, 거꾸로 돌아가는 하늘. 강렬한 회전과 함께 오늘의 에너지를 깨워보세요.', accent: '#ff5274', rgb: '255, 82, 116' },
+  { name: '렛츠 트위스트', theme: 'twist', tag: 'ORBIT TWIST / 엇갈리는 궤도', description: '돌고, 비틀고, 다시 마주치는 하늘. 예측할 수 없는 궤도에 오늘의 즐거움을 맡겨봐요.', accent: '#bb88ff', rgb: '187, 136, 255' },
+  { name: '매직스윙', theme: 'magic', tag: 'A LITTLE MAGIC / 마법 같은 순간', description: '반짝이는 바람에 가볍게 몸을 맡겨요. 작은 설렘으로 채워지는 마법 같은 모험이에요.', accent: '#ff9fd8', rgb: '255, 159, 216' },
+];
 
-let activeKind = null;
-let finishTimer = null;
+const $ = (selector) => document.querySelector(selector);
+const ticketScreen = $('#ticket-screen');
+const drawScreen = $('#draw-screen');
+const revealScreen = $('#reveal-screen');
+const wheel = $('#roulette-cylinder');
+const rouletteStage = $('#roulette-stage');
+const machine = $('#gacha-machine');
+const drawButton = $('#draw-button');
+const keepButton = $('#keep-button');
+const redrawButton = $('#redraw-button');
+const skipButton = $('#skip-button');
+const openingOverlay = $('#opening-overlay');
+const status = $('#live-status');
+const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+const effects = new RideEffects($('#effects-canvas'));
+const timers = new Set();
+let stage = 'intro';
+let selectedRide = null;
+let ticketRide = null;
+let spinFrame = null;
+let spinEndListener = null;
 
-function buildCylinder(entries) {
-  const stageHeight = rouletteStage.clientHeight;
-  const panelHeight = Math.min(stageHeight * 0.36, 132);
-  const slice = 360 / entries.length;
-  const radius = panelHeight / (2 * Math.tan(Math.PI / entries.length));
+// All delayed work belongs to the current scene, so navigation cannot reveal an old draw.
+function later(callback, delay) {
+  const timer = window.setTimeout(() => {
+    timers.delete(timer);
+    callback();
+  }, delay);
+  timers.add(timer);
+  return timer;
+}
 
-  wheel.replaceChildren();
+function cancelSequence() {
+  timers.forEach((timer) => window.clearTimeout(timer));
+  timers.clear();
+  if (spinFrame !== null) cancelAnimationFrame(spinFrame);
+  spinFrame = null;
+  if (spinEndListener) wheel.removeEventListener('transitionend', spinEndListener);
+  spinEndListener = null;
+  sound.stop();
+}
+
+function setStage(next) {
+  cancelSequence();
+  effects.stop();
+  stage = next;
+  document.body.dataset.stage = next;
+  ticketScreen.hidden = next !== 'ticket' && next !== 'intro';
+  drawScreen.hidden = next !== 'draw';
+  revealScreen.hidden = next !== 'reveal';
+  skipButton.hidden = next !== 'draw' && next !== 'reveal';
+  openingOverlay.hidden = next !== 'intro';
+  $('#attraction-pool').open = false;
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function focusHeading(selector) {
+  $(selector).focus({ preventScroll: true });
+}
+
+function setAccent(ride) {
+  document.documentElement.style.setProperty('--accent', ride ? ride.accent : '#c4f89a');
+  document.documentElement.style.setProperty('--accent-rgb', ride ? ride.rgb : '196, 248, 154');
+}
+
+function randomRideIndex() {
+  if (!window.crypto?.getRandomValues) return Math.floor(Math.random() * rides.length);
+  const values = new Uint32Array(1);
+  const limit = Math.floor(0x100000000 / rides.length) * rides.length;
+  do window.crypto.getRandomValues(values); while (values[0] >= limit);
+  return values[0] % rides.length;
+}
+
+function makeIcon(theme) {
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('aria-hidden', 'true');
+  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  use.setAttribute('href', '#icon-' + theme);
+  icon.append(use);
+  return icon;
+}
+
+function updateCylinderSize() {
+  const panelHeight = Math.min(rouletteStage.clientHeight * .34, 104);
   rouletteStage.style.setProperty('--panel-height', panelHeight + 'px');
-  wheel.style.setProperty('--panel-height', panelHeight + 'px');
-  wheel.style.setProperty('--cylinder-radius', radius + 'px');
-  wheel.setAttribute('aria-label', entries.map((entry) => entry.name).join(', '));
+  rouletteStage.style.setProperty('--cylinder-radius', panelHeight / (2 * Math.tan(Math.PI / rides.length)) + 'px');
+}
 
-  entries.forEach((entry, index) => {
-    const label = document.createElement('div');
-    label.className = 'cylinder-panel';
-    label.setAttribute('aria-hidden', 'true');
-    label.textContent = entry.label;
-    label.style.setProperty('--panel-rotation', index * slice + 'deg');
-    wheel.append(label);
+function buildCylinder() {
+  updateCylinderSize();
+  wheel.replaceChildren();
+  rides.forEach((ride, index) => {
+    const panel = document.createElement('div');
+    panel.className = 'cylinder-panel';
+    panel.setAttribute('aria-hidden', 'true');
+    panel.style.setProperty('--panel-rotation', index * 360 / rides.length + 'deg');
+    const label = document.createElement('span');
+    label.textContent = ride.name;
+    panel.append(makeIcon(ride.theme), label);
+    wheel.append(panel);
   });
 }
 
-function showConfetti() {
-  confettiLayer.replaceChildren();
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  const colors = ['#ffd36a', '#fa765f', '#5dd3bf', '#f8f8f5', '#b38bff', '#ff91c8'];
-  const shapes = ['', 'round', 'streamer'];
-  for (let index = 0; index < 96; index += 1) {
-    const piece = document.createElement('span');
-    piece.className = 'confetti-piece ' + shapes[Math.floor(Math.random() * shapes.length)];
-    piece.style.left = Math.random() * 100 + '%';
-    piece.style.backgroundColor = colors[index % colors.length];
-    piece.style.setProperty('--delay', Math.random() * 0.45 + 's');
-    piece.style.setProperty('--duration', 2.5 + Math.random() * 1.5 + 's');
-    piece.style.setProperty('--drift', (Math.random() * 240 - 120) + 'px');
-    piece.style.setProperty('--spin', (Math.random() * 1080 - 540) + 'deg');
-    confettiLayer.append(piece);
-  }
-
-  window.setTimeout(() => confettiLayer.replaceChildren(), 5000);
-}
-
-function finishSpin(selectedIndex) {
-  const current = choices[activeKind];
-  const selected = current.entries[selectedIndex];
-  winnerKicker.textContent = current.kicker;
-  winnerTitle.textContent = selected.name;
-  winnerTitle.classList.toggle('long-title', activeKind === 'mission');
-  winnerDetail.textContent = current.detail;
-  spinHint.textContent = '선정 완료!';
-  winnerOverlay.hidden = false;
-  showConfetti();
-}
-
-function spinCylinder() {
-  const entries = choices[activeKind].entries;
-  const selectedIndex = Math.floor(Math.random() * entries.length);
-  const slice = 360 / entries.length;
-  const alignment = (360 - selectedIndex * slice + 360) % 360;
-  const finalRotation = 6 * 360 + alignment;
-  let finished = false;
-
+function drawRide() {
+  if (stage === 'draw') return;
+  selectedRide = rides[randomRideIndex()];
+  setStage('draw');
+  setAccent(null);
+  machine.classList.remove('is-spinning', 'is-locked');
+  $('#machine-status').textContent = 'SCANNING POSSIBILITIES';
+  $('#footer-caption').textContent = 'A NEW ADVENTURE IS ON ITS WAY';
+  status.textContent = '놀이기구를 뽑고 있어요.';
+  focusHeading('#draw-heading');
+  buildCylinder();
   wheel.style.transition = 'none';
   wheel.style.transform = 'translateY(-50%) rotateX(0deg)';
   void wheel.offsetWidth;
-  wheel.style.transition = '';
 
-  function finishOnce() {
-    if (finished) return;
-    finished = true;
-    window.clearTimeout(finishTimer);
-    wheel.removeEventListener('transitionend', onTransitionEnd);
-    finishSpin(selectedIndex);
+  later(() => {
+    if (stage !== 'draw') return;
+    machine.classList.add('is-spinning');
+    wheel.style.transition = motionQuery.matches ? 'none' : '';
+    let finished = false;
+    const complete = () => {
+      if (finished || stage !== 'draw') return;
+      finished = true;
+      if (spinEndListener) wheel.removeEventListener('transitionend', spinEndListener);
+      spinEndListener = null;
+      machine.classList.add('is-locked');
+      $('#machine-status').textContent = 'DESTINATION LOCKED';
+      sound.stop();
+      sound.chime();
+      later(() => showReveal(motionQuery.matches), motionQuery.matches ? 80 : 340);
+    };
+    spinEndListener = (event) => {
+      if (event.target === wheel && event.propertyName === 'transform') complete();
+    };
+    wheel.addEventListener('transitionend', spinEndListener);
+    const index = rides.indexOf(selectedRide);
+    const alignment = (360 - index * 360 / rides.length) % 360;
+    spinFrame = requestAnimationFrame(() => {
+      spinFrame = null;
+      wheel.style.transform = 'translateY(-50%) rotateX(' + (2160 + alignment) + 'deg)';
+      sound.draw();
+      later(complete, motionQuery.matches ? 240 : 3990);
+    });
+  }, motionQuery.matches ? 40 : 280);
+}
+
+function readyReveal() {
+  if (stage !== 'reveal') return;
+  keepButton.disabled = false;
+  redrawButton.disabled = false;
+  skipButton.hidden = true;
+  $('#footer-caption').textContent = 'YOUR FIRST ADVENTURE, UNLOCKED';
+  status.textContent = selectedRide.name + '이 선택됐어요. 티켓에 담거나 한 번 더 뽑을 수 있어요.';
+  focusHeading('#reveal-heading');
+}
+
+function showReveal(instant = false) {
+  if (!selectedRide) return;
+  setStage('reveal');
+  setAccent(selectedRide);
+  keepButton.disabled = true;
+  redrawButton.disabled = true;
+  revealScreen.classList.toggle('is-instant', instant);
+  revealScreen.dataset.theme = selectedRide.theme;
+  $('#reveal-tag').textContent = selectedRide.tag;
+  $('#reveal-heading').textContent = selectedRide.name;
+  $('#reveal-description').textContent = selectedRide.description;
+  $('#reveal-pass-name').textContent = selectedRide.name;
+  $('#reveal-pass-icon use').setAttribute('href', '#icon-' + selectedRide.theme);
+  $('#reveal-index').textContent = String(rides.indexOf(selectedRide) + 1).padStart(2, '0');
+  effects.start(selectedRide.theme);
+  sound.reveal();
+  if (instant) readyReveal();
+  else later(readyReveal, 1850);
+}
+
+function renderTicket(animateStamp) {
+  const filled = Boolean(ticketRide);
+  const ticket = $('#adventure-ticket');
+  ticket.classList.remove('is-filling');
+  $('#ticket-ride-name').textContent = filled ? ticketRide.name : '아직 비어 있는 모험';
+  $('#mystery-mark').hidden = filled;
+  $('#ticket-ride-icon').toggleAttribute('hidden', !filled);
+  $('#slot-state').textContent = filled ? '✓' : '✧';
+  $('#draw-button-label').textContent = filled ? '새로운 모험 뽑기' : '놀이기구 뽑기';
+  $('#ticket-ready-label').textContent = filled ? '첫 번째 모험이 티켓에 채워졌어요' : '티켓에 모험을 채울 준비가 됐어요';
+  $('#ticket-art-caption').textContent = filled ? 'YOUR FIRST ADVENTURE IS CONFIRMED' : 'THE ADVENTURE IS YOURS TO FIND';
+  $('#ticket-heading').innerHTML = filled ? '첫 번째 모험,<br><span>티켓에 담았어요.</span>' : '한 장의 티켓,<br><span>예측불가한 하루.</span>';
+  $('#ticket-description').innerHTML = filled ? '오늘의 첫 번째 목적지가 정해졌어요.<br>현장 운영과 탑승 안내를 확인하고 즐겨보세요.' : '어디로 갈지는 아직 비밀.<br>뽑기 한 번으로 오늘의 첫 모험을 채워보세요.';
+  $('#ride-step').classList.toggle('done', filled);
+  if (filled) $('#ticket-ride-icon use').setAttribute('href', '#icon-' + ticketRide.theme);
+  if (animateStamp) {
+    ticket.classList.remove('is-filled');
+    void ticket.offsetWidth;
   }
+  ticket.classList.toggle('is-filled', filled);
+  if (animateStamp) ticket.classList.add('is-filling');
+}
 
-  function onTransitionEnd(event) {
-    if (event.target === wheel && event.propertyName === 'transform') finishOnce();
+function showTicket(animateStamp = false) {
+  setStage('ticket');
+  setAccent(null);
+  drawButton.disabled = false;
+  renderTicket(animateStamp);
+  $('#footer-caption').textContent = 'YOUR TICKET TO THE UNEXPECTED';
+  if (animateStamp) {
+    sound.chime();
+    status.textContent = ticketRide.name + '을 티켓에 담았어요.';
+  } else status.textContent = '어드벤처 티켓으로 돌아왔어요.';
+  focusHeading('#ticket-heading');
+}
+
+// Small synthesized cues accompany the draw when explicitly enabled.
+const sound = {
+  enabled: false,
+  context: null,
+  nodes: new Set(),
+  unlock() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return false;
+    try {
+      if (!this.context) this.context = new AudioContext();
+      if (this.context.state === 'suspended') this.context.resume().catch(() => {});
+      return true;
+    } catch { return false; }
+  },
+  note(frequency, start = 0, duration = .15, level = .035, type = 'sine') {
+    if (!this.enabled || !this.context || this.context.state === 'closed') return;
+    const oscillator = this.context.createOscillator();
+    const gain = this.context.createGain();
+    const time = this.context.currentTime + start;
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, time);
+    gain.gain.setValueAtTime(0, time);
+    gain.gain.linearRampToValueAtTime(level, time + .015);
+    gain.gain.exponentialRampToValueAtTime(.001, time + duration);
+    oscillator.connect(gain);
+    gain.connect(this.context.destination);
+    this.nodes.add(oscillator);
+    oscillator.onended = () => {
+      this.nodes.delete(oscillator);
+      oscillator.disconnect();
+      gain.disconnect();
+    };
+    oscillator.start(time);
+    oscillator.stop(time + duration + .03);
+  },
+  draw() {
+    if (motionQuery.matches) return;
+    for (let index = 0; index < 26; index += 1) this.note(270 + (index % 5) * 55, index * .09 + index * index * .0016, .055, .015, 'triangle');
+  },
+  chime() { [392, 523.25].forEach((frequency, index) => this.note(frequency, index * .07, .24)); },
+  reveal() {
+    [261.63, 329.63, 392, 523.25, 783.99].forEach((frequency, index) => this.note(frequency, .16 + index * .12, .55, .032));
+  },
+  stop() {
+    this.nodes.forEach((oscillator) => { try { oscillator.stop(); } catch {} });
+    this.nodes.clear();
+  },
+};
+
+$('#sound-toggle').addEventListener('click', () => {
+  sound.enabled = !sound.enabled && sound.unlock();
+  sound.stop();
+  $('#sound-toggle').setAttribute('aria-pressed', String(sound.enabled));
+  $('#sound-toggle').setAttribute('aria-label', sound.enabled ? '효과음 끄기' : '효과음 켜기');
+  $('#sound-label').textContent = sound.enabled ? '소리 켜짐' : '소리 꺼짐';
+  if (sound.enabled) sound.chime();
+});
+drawButton.addEventListener('click', drawRide);
+redrawButton.addEventListener('click', drawRide);
+keepButton.addEventListener('click', () => {
+  if (stage !== 'reveal' || keepButton.disabled) return;
+  ticketRide = selectedRide;
+  showTicket(true);
+});
+$('#brand-home').addEventListener('click', (event) => {
+  event.preventDefault();
+  showTicket();
+});
+skipButton.addEventListener('click', () => {
+  if (stage === 'draw') showReveal(true);
+  else if (stage === 'reveal') {
+    revealScreen.classList.add('is-instant');
+    cancelSequence();
+    readyReveal();
   }
-
-  wheel.addEventListener('transitionend', onTransitionEnd);
-  finishTimer = window.setTimeout(finishOnce, 5500);
-  spinHint.textContent = '돌아가는 중...';
-  wheel.style.transform = 'translateY(-50%) rotateX(' + finalRotation + 'deg)';
-}
-
-function startRoulette(kind) {
-  activeKind = kind;
-  const current = choices[kind];
-  homeScreen.hidden = true;
-  rouletteScreen.hidden = false;
-  winnerOverlay.hidden = true;
-  rouletteScreen.classList.remove('has-winner');
-  heading.textContent = current.heading;
-  wheel.setAttribute('aria-label', current.heading);
-  buildCylinder(current.entries);
-  requestAnimationFrame(spinCylinder);
-}
-
-function showHome() {
-  window.clearTimeout(finishTimer);
-  confettiLayer.replaceChildren();
-  winnerOverlay.hidden = true;
-  rouletteScreen.hidden = true;
-  homeScreen.hidden = false;
-  activeKind = null;
-}
-
-document.querySelectorAll('.home-button').forEach((button) => {
-  button.addEventListener('click', () => startRoulette(button.dataset.kind));
+});
+window.addEventListener('resize', () => { if (stage === 'draw') updateCylinderSize(); }, { passive: true });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { effects.stop(); sound.stop(); }
+  else if (stage === 'reveal') effects.start(selectedRide.theme);
+});
+motionQuery.addEventListener('change', () => {
+  if (stage === 'intro') showTicket();
+  else if (stage === 'draw' && motionQuery.matches) showReveal(true);
+  else if (stage === 'reveal' && motionQuery.matches) {
+    revealScreen.classList.add('is-instant');
+    cancelSequence();
+    readyReveal();
+  }
 });
 
-spinAgainButton.addEventListener('click', () => {
-  winnerOverlay.hidden = true;
-  confettiLayer.replaceChildren();
-  requestAnimationFrame(spinCylinder);
+rides.forEach((ride) => {
+  const item = document.createElement('div');
+  item.className = 'pool-item';
+  const name = document.createElement('span');
+  name.textContent = ride.name;
+  const chance = document.createElement('small');
+  chance.textContent = '12.5%';
+  item.append(makeIcon(ride.theme), name, chance);
+  $('#pool-list').append(item);
 });
-
-backHomeButton.addEventListener('click', showHome);
+renderTicket(false);
+later(() => openingOverlay.classList.add('is-leaving'), motionQuery.matches ? 30 : 800);
+later(() => { openingOverlay.hidden = true; }, motionQuery.matches ? 80 : 1600);
+later(() => {
+  if (stage !== 'intro') return;
+  document.body.dataset.stage = stage = 'ticket';
+  drawButton.disabled = false;
+  status.textContent = '티켓이 준비됐어요. 놀이기구 뽑기로 첫 번째 모험을 채워보세요.';
+}, motionQuery.matches ? 150 : 2050);
