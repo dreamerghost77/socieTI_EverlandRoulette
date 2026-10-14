@@ -33,15 +33,13 @@ button { font: inherit; }
 
 .roulette-screen { position: fixed; z-index: 2; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #050505; }
 .roulette-heading { position: absolute; z-index: 2; top: max(20px, env(safe-area-inset-top)); left: 50%; margin: 0; color: rgba(255, 255, 255, .76); font-size: 10px; font-weight: 800; letter-spacing: .26em; text-align: center; text-transform: uppercase; transform: translateX(-50%); white-space: nowrap; }
-.roulette-stage { position: relative; display: grid; width: min(96vmin, 1040px); aspect-ratio: 1; place-items: center; }
-.roulette-wheel { position: relative; width: 100%; height: 100%; overflow: hidden; border: 2px solid rgba(255, 255, 255, .8); border-radius: 50%; background: #151515; box-shadow: 0 0 0 8px #0b0b0b, 0 0 0 10px rgba(255, 255, 255, .24), 0 0 90px rgba(255, 255, 255, .08); transform: rotate(0deg); transition: transform 5.2s cubic-bezier(.1, .77, .08, 1); will-change: transform; }
-.roulette-wheel::before { position: absolute; z-index: 2; inset: 0; border-radius: 50%; background: repeating-conic-gradient(from -.32deg, rgba(255, 255, 255, .77) 0deg .64deg, transparent .64deg var(--slice-angle, 45deg)); content: ""; pointer-events: none; }
-.roulette-wheel::after { position: absolute; z-index: 1; inset: 1%; border: 1px solid rgba(255, 255, 255, .21); border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); content: ""; pointer-events: none; }
-.wheel-label { position: absolute; z-index: 3; display: grid; width: clamp(74px, 12vw, 136px); min-height: 30px; place-items: center; padding: 3px 5px; color: #fff; font-size: clamp(9px, 1.25vw, 15px); font-weight: 800; line-height: 1.3; text-align: center; text-shadow: 0 1px 5px #000, 0 1px 12px rgba(0,0,0,.8); transform: translate(-50%, -50%); user-select: none; }
-.pointer { position: absolute; z-index: 4; top: -2px; left: 50%; width: 0; height: 0; border-top: 37px solid var(--gold); border-right: 19px solid transparent; border-left: 19px solid transparent; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .85)); transform: translateX(-50%); }
-.wheel-hub { position: absolute; z-index: 4; top: 50%; left: 50%; display: grid; width: clamp(74px, 12vmin, 116px); height: clamp(74px, 12vmin, 116px); place-content: center; border: 3px solid rgba(255, 255, 255, .9); border-radius: 50%; color: var(--white); background: radial-gradient(circle at 35% 30%, #333, #090909 72%); box-shadow: 0 0 0 7px rgba(0,0,0,.76), 0 0 24px rgba(255,255,255,.12); text-align: center; transform: translate(-50%, -50%); pointer-events: none; }
-.wheel-hub span { font-size: clamp(12px, 2vmin, 18px); font-weight: 900; letter-spacing: .12em; }
-.wheel-hub i { margin-top: 3px; color: var(--gold); font-size: 11px; font-style: normal; }
+.roulette-stage { --panel-height: 128px; position: relative; display: grid; width: min(94vw, 1160px); height: min(44vh, 380px); min-height: 250px; place-items: center; perspective: 1050px; perspective-origin: center; }
+.roulette-cylinder { position: absolute; top: 50%; left: 0; width: 100%; height: var(--panel-height); transform: translateY(-50%) rotateX(0deg); transform-style: preserve-3d; transition: transform 5.2s cubic-bezier(.1, .77, .08, 1); will-change: transform; }
+.cylinder-panel { position: absolute; top: 50%; left: 0; display: grid; width: 100%; height: var(--panel-height); place-items: center; padding: 12px clamp(30px, 8vw, 110px); border-top: 1px solid rgba(255,255,255,.28); border-bottom: 1px solid rgba(255,255,255,.22); color: #fff; background: linear-gradient(180deg, #292929 0%, #171717 18%, #111 50%, #1d1d1d 82%, #2b2b2b 100%); box-shadow: inset 0 10px 20px rgba(255,255,255,.035), inset 0 -14px 24px rgba(0,0,0,.5); backface-visibility: hidden; font-size: clamp(20px, 2.3vw, 28px); font-weight: 800; line-height: 1.45; text-align: center; text-shadow: 0 2px 12px rgba(0,0,0,.9); overflow-wrap: anywhere; user-select: none; transform: translateY(-50%) rotateX(var(--panel-rotation)) translateZ(var(--cylinder-radius)); }
+.cylinder-cap { position: absolute; z-index: 3; top: 50%; width: clamp(22px, 3vw, 38px); height: 94%; border: 2px solid rgba(255,255,255,.58); border-radius: 50%; background: linear-gradient(90deg, #080808, #353535 44%, #111 100%); box-shadow: 0 0 18px rgba(0,0,0,.8), inset 0 0 0 4px rgba(255,255,255,.08); transform: translateY(-50%); pointer-events: none; }
+.cylinder-cap-left { left: -8px; }
+.cylinder-cap-right { right: -8px; transform: translateY(-50%) rotate(180deg); }
+.selection-window { position: absolute; z-index: 4; top: 50%; left: 0; width: 100%; height: var(--panel-height); border-top: 2px solid rgba(255,211,106,.92); border-bottom: 2px solid rgba(255,211,106,.92); background: linear-gradient(90deg, rgba(255,255,255,.045), transparent 13%, transparent 87%, rgba(255,255,255,.045)); box-shadow: 0 0 24px rgba(255,211,106,.12), inset 0 0 22px rgba(255,211,106,.05); transform: translateY(-50%); pointer-events: none; }
 .spin-hint { position: absolute; z-index: 2; bottom: max(22px, env(safe-area-inset-bottom)); left: 50%; margin: 0; color: rgba(255, 255, 255, .7); font-size: 11px; font-weight: 700; letter-spacing: .15em; text-align: center; transform: translateX(-50%); white-space: nowrap; }
 
 .winner-overlay { position: fixed; z-index: 6; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 22px; overflow: hidden; background: rgba(3, 3, 3, .79); text-align: center; animation: winner-appear .45s ease both; }
@@ -71,9 +69,9 @@ button { font: inherit; }
 @keyframes confetti-fall { 0% { transform: translate3d(0, -5vh, 0) rotate(0deg); } 100% { transform: translate3d(var(--drift, 0px), 110vh, 0) rotate(var(--spin, 720deg)); } }
 
 @media (max-width: 600px) {
-  .roulette-stage { width: min(98vmin, 600px); }
-  .wheel-label { width: clamp(60px, 18vw, 88px); font-size: clamp(8px, 2.4vw, 11px); }
-  .pointer { border-top-width: 30px; border-right-width: 15px; border-left-width: 15px; }
+  .roulette-stage { --panel-height: 112px; width: min(94vw, 600px); height: min(42vh, 350px); min-height: 220px; }
+  .cylinder-panel { padding: 10px 30px; font-size: clamp(17px, 4.6vw, 22px); }
+  .cylinder-cap { width: 23px; }
   .winner-actions { flex-direction: column; width: min(82vw, 300px); }
   .winner-button { width: 100%; }
   .winner-spark-left { left: 9%; }
@@ -82,7 +80,7 @@ button { font: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; }
-  .roulette-wheel { transition-duration: .08s; }
+  .roulette-cylinder { transition-duration: .08s; }
   .winner-overlay, .winner-overlay::after, .winner-spark { animation-duration: .01ms !important; }
   .confetti-piece { animation-duration: .01ms !important; }
   .home-button, .winner-button { transition-duration: .01ms; }

@@ -33,7 +33,8 @@ const choices = {
 
 const homeScreen = document.querySelector('#home-screen');
 const rouletteScreen = document.querySelector('#roulette-screen');
-const wheel = document.querySelector('#roulette-wheel');
+const wheel = document.querySelector('#roulette-cylinder');
+const rouletteStage = document.querySelector('#roulette-stage');
 const heading = document.querySelector('#roulette-heading');
 const spinHint = document.querySelector('#spin-hint');
 const winnerOverlay = document.querySelector('#winner-overlay');
@@ -47,30 +48,24 @@ const backHomeButton = document.querySelector('#back-home');
 let activeKind = null;
 let finishTimer = null;
 
-function buildWheel(entries) {
-  const size = wheel.clientWidth;
+function buildCylinder(entries) {
+  const stageHeight = rouletteStage.clientHeight;
+  const panelHeight = Math.min(stageHeight * 0.36, 132);
   const slice = 360 / entries.length;
-  const radius = size * 0.34;
-  const palette = ['#191919', '#242424', '#151515', '#202020'];
-  const slices = entries.map((entry, index) => {
-    const start = index * slice;
-    const end = (index + 1) * slice;
-    return palette[index % palette.length] + ' ' + start + 'deg ' + end + 'deg';
-  });
+  const radius = panelHeight / (2 * Math.tan(Math.PI / entries.length));
 
   wheel.replaceChildren();
-  wheel.style.setProperty('--slice-angle', slice + 'deg');
-  wheel.style.background = 'conic-gradient(' + slices.join(',') + ')';
+  rouletteStage.style.setProperty('--panel-height', panelHeight + 'px');
+  wheel.style.setProperty('--panel-height', panelHeight + 'px');
+  wheel.style.setProperty('--cylinder-radius', radius + 'px');
   wheel.setAttribute('aria-label', entries.map((entry) => entry.name).join(', '));
 
   entries.forEach((entry, index) => {
-    const angle = (index + 0.5) * slice - 90;
-    const radians = (angle * Math.PI) / 180;
-    const label = document.createElement('span');
-    label.className = 'wheel-label';
+    const label = document.createElement('div');
+    label.className = 'cylinder-panel';
+    label.setAttribute('aria-hidden', 'true');
     label.textContent = entry.label;
-    label.style.left = (50 + (Math.cos(radians) * radius * 100) / size) + '%';
-    label.style.top = (50 + (Math.sin(radians) * radius * 100) / size) + '%';
+    label.style.setProperty('--panel-rotation', index * slice + 'deg');
     wheel.append(label);
   });
 }
@@ -108,17 +103,16 @@ function finishSpin(selectedIndex) {
   showConfetti();
 }
 
-function spinWheel() {
+function spinCylinder() {
   const entries = choices[activeKind].entries;
   const selectedIndex = Math.floor(Math.random() * entries.length);
   const slice = 360 / entries.length;
-  const centerAngle = (selectedIndex + 0.5) * slice;
-  const alignment = (360 - centerAngle + 360) % 360;
+  const alignment = (360 - selectedIndex * slice + 360) % 360;
   const finalRotation = 6 * 360 + alignment;
   let finished = false;
 
   wheel.style.transition = 'none';
-  wheel.style.transform = 'rotate(0deg)';
+  wheel.style.transform = 'translateY(-50%) rotateX(0deg)';
   void wheel.offsetWidth;
   wheel.style.transition = '';
 
@@ -137,7 +131,7 @@ function spinWheel() {
   wheel.addEventListener('transitionend', onTransitionEnd);
   finishTimer = window.setTimeout(finishOnce, 5500);
   spinHint.textContent = '돌아가는 중...';
-  wheel.style.transform = 'rotate(' + finalRotation + 'deg)';
+  wheel.style.transform = 'translateY(-50%) rotateX(' + finalRotation + 'deg)';
 }
 
 function startRoulette(kind) {
@@ -149,8 +143,8 @@ function startRoulette(kind) {
   rouletteScreen.classList.remove('has-winner');
   heading.textContent = current.heading;
   wheel.setAttribute('aria-label', current.heading);
-  buildWheel(current.entries);
-  requestAnimationFrame(spinWheel);
+  buildCylinder(current.entries);
+  requestAnimationFrame(spinCylinder);
 }
 
 function showHome() {
@@ -169,7 +163,7 @@ document.querySelectorAll('.home-button').forEach((button) => {
 spinAgainButton.addEventListener('click', () => {
   winnerOverlay.hidden = true;
   confettiLayer.replaceChildren();
-  requestAnimationFrame(spinWheel);
+  requestAnimationFrame(spinCylinder);
 });
 
 backHomeButton.addEventListener('click', showHome);
