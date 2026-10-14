@@ -31,7 +31,8 @@ let stage = 'intro';
 let selectedRide = null;
 let ticketRide = null;
 let spinFrame = null;
-let spinEndListener = null;
+let revealPhase = null;
+let revealStartedAt = 0;
 
 // All delayed work belongs to the current scene, so navigation cannot reveal an old draw.
 function later(callback, delay) {
@@ -48,8 +49,6 @@ function cancelSequence() {
   timers.clear();
   if (spinFrame !== null) cancelAnimationFrame(spinFrame);
   spinFrame = null;
-  if (spinEndListener) wheel.removeEventListener('transitionend', spinEndListener);
-  spinEndListener = null;
   sound.stop();
 }
 
@@ -114,12 +113,30 @@ function buildCylinder() {
   });
 }
 
+function clearRevealDetails() {
+  ['#reveal-tag', '#reveal-heading', '#reveal-description', '#reveal-pass-name', '#reveal-index'].forEach((selector) => {
+    $(selector).textContent = '';
+  });
+  $('#reveal-pass-icon use').removeAttribute('href');
+  $('#reveal-content').hidden = true;
+  $('#reveal-content').inert = true;
+  $('#reveal-index').hidden = true;
+  revealScreen.classList.remove('is-instant', 'is-revealed');
+  delete revealScreen.dataset.theme;
+  delete revealScreen.dataset.revealPhase;
+  revealPhase = null;
+  keepButton.disabled = true;
+  redrawButton.disabled = true;
+}
+
 function drawRide() {
   if (stage === 'draw') return;
   selectedRide = rides[randomRideIndex()];
   setStage('draw');
+  clearRevealDetails();
   setAccent(null);
-  machine.classList.remove('is-spinning', 'is-locked');
+  drawScreen.classList.remove('is-fading');
+  machine.classList.remove('is-spinning');
   $('#machine-status').textContent = 'SCANNING POSSIBILITIES';
   $('#footer-caption').textContent = 'A NEW ADVENTURE IS ON ITS WAY';
   status.textContent = '놀이기구를 뽑고 있어요.';
@@ -133,61 +150,105 @@ function drawRide() {
     if (stage !== 'draw') return;
     machine.classList.add('is-spinning');
     wheel.style.transition = motionQuery.matches ? 'none' : '';
-    let finished = false;
-    const complete = () => {
-      if (finished || stage !== 'draw') return;
-      finished = true;
-      if (spinEndListener) wheel.removeEventListener('transitionend', spinEndListener);
-      spinEndListener = null;
-      machine.classList.add('is-locked');
-      $('#machine-status').textContent = 'DESTINATION LOCKED';
-      sound.stop();
-      sound.chime();
-      later(() => showReveal(motionQuery.matches), motionQuery.matches ? 80 : 340);
-    };
-    spinEndListener = (event) => {
-      if (event.target === wheel && event.propertyName === 'transform') complete();
-    };
-    wheel.addEventListener('transitionend', spinEndListener);
-    const index = rides.indexOf(selectedRide);
-    const alignment = (360 - index * 360 / rides.length) % 360;
     spinFrame = requestAnimationFrame(() => {
       spinFrame = null;
-      wheel.style.transform = 'translateY(-50%) rotateX(' + (2160 + alignment) + 'deg)';
+      // The reel is anticipation only; it disappears while moving and never points to the result.
+      wheel.style.transform = 'translateY(-50%) rotateX(2542.5deg)';
       sound.draw();
-      later(complete, motionQuery.matches ? 240 : 3990);
+      if (motionQuery.matches) {
+        later(() => showReveal(true), 180);
+        return;
+      }
+      later(() => {
+        if (stage !== 'draw') return;
+        drawScreen.classList.add('is-fading');
+        status.textContent = '추첨 화면이 사라지고 모험의 빛이 나타납니다.';
+        later(() => showReveal(), 1050);
+      }, 1350);
     });
   }, motionQuery.matches ? 40 : 280);
 }
 
 function readyReveal() {
-  if (stage !== 'reveal') return;
+  if (stage !== 'reveal' || revealPhase !== 'result') return;
   keepButton.disabled = false;
   redrawButton.disabled = false;
   skipButton.hidden = true;
   $('#footer-caption').textContent = 'YOUR FIRST ADVENTURE, UNLOCKED';
-  status.textContent = selectedRide.name + '이 선택됐어요. 티켓에 담거나 한 번 더 뽑을 수 있어요.';
+  status.textContent = '오늘의 놀이기구는 ' + selectedRide.name + '입니다. 티켓에 담거나 한 번 더 뽑을 수 있어요.';
   focusHeading('#reveal-heading');
 }
 
-function showReveal(instant = false) {
-  if (!selectedRide) return;
-  setStage('reveal');
-  setAccent(selectedRide);
-  keepButton.disabled = true;
-  redrawButton.disabled = true;
+function publishResult(instant = false) {
+  if (stage !== 'reveal' || !selectedRide) return;
+  revealPhase = 'result';
+  revealScreen.dataset.revealPhase = 'result';
   revealScreen.classList.toggle('is-instant', instant);
+  revealScreen.classList.add('is-revealed');
   revealScreen.dataset.theme = selectedRide.theme;
+  revealScreen.setAttribute('aria-labelledby', 'reveal-heading');
+  $('#cinematic-caption').hidden = true;
+  $('#reveal-content').hidden = false;
+  $('#reveal-content').inert = false;
+  $('#reveal-index').hidden = false;
+  setAccent(selectedRide);
   $('#reveal-tag').textContent = selectedRide.tag;
   $('#reveal-heading').textContent = selectedRide.name;
   $('#reveal-description').textContent = selectedRide.description;
   $('#reveal-pass-name').textContent = selectedRide.name;
   $('#reveal-pass-icon use').setAttribute('href', '#icon-' + selectedRide.theme);
   $('#reveal-index').textContent = String(rides.indexOf(selectedRide) + 1).padStart(2, '0');
-  effects.start(selectedRide.theme);
+  if (instant) effects.start(selectedRide.theme, { elapsed: 5.5 });
   sound.reveal();
   if (instant) readyReveal();
-  else later(readyReveal, 1850);
+  else later(readyReveal, 1350);
+}
+
+function setRevealPhase(phase) {
+  if (stage !== 'reveal') return;
+  revealPhase = phase;
+  revealScreen.dataset.revealPhase = phase;
+  if (phase === 'hint') {
+    setAccent(selectedRide);
+    $('#cinematic-heading').textContent = '빛 너머로, 모험의 기척.';
+    $('#cinematic-hint').textContent = '색이 번지고, 낯익은 움직임이 깨어납니다.';
+    $('#cinematic-step').textContent = '02 / RESONANCE';
+    status.textContent = '빛에 색이 번지며 모험의 움직임이 드러납니다.';
+    sound.note(261.63, 0, .7, .025);
+  } else if (phase === 'silhouette') {
+    $('#cinematic-heading').textContent = '조금씩 드러나는, 오늘의 모험.';
+    $('#cinematic-hint').textContent = '실루엣을 따라, 첫 번째 목적지가 모습을 드러냅니다.';
+    $('#cinematic-step').textContent = '03 / AWAKENING';
+    status.textContent = '놀이기구의 실루엣이 서서히 드러납니다.';
+    sound.note(329.63, 0, .9, .025);
+  }
+}
+
+function showReveal(instant = false) {
+  if (!selectedRide) return;
+  setStage('reveal');
+  clearRevealDetails();
+  setAccent(null);
+  revealStartedAt = performance.now();
+  revealScreen.setAttribute('aria-labelledby', 'cinematic-heading');
+  revealScreen.dataset.revealPhase = revealPhase = 'arrival';
+  $('#cinematic-caption').hidden = false;
+  $('#cinematic-heading').textContent = '어떤 모험이 기다릴까요?';
+  $('#cinematic-hint').textContent = '작은 빛 하나가, 오늘의 목적지를 찾아갑니다.';
+  $('#cinematic-step').textContent = '01 / ARRIVAL';
+  $('#footer-caption').textContent = 'LET THE ADVENTURE FIND YOU';
+  if (instant || motionQuery.matches) {
+    publishResult(true);
+    return;
+  }
+  effects.start(selectedRide.theme, { cinematic: true });
+  sound.note(164.81, 0, .9, .025);
+  sound.note(220, .45, .9, .02);
+  focusHeading('#cinematic-heading');
+  status.textContent = '모험의 빛이 나타납니다. 움직임을 따라 목적지를 발견해 보세요.';
+  later(() => setRevealPhase('hint'), 1200);
+  later(() => setRevealPhase('silhouette'), 2700);
+  later(() => publishResult(), 5400);
 }
 
 function renderTicket(animateStamp) {
@@ -297,23 +358,24 @@ $('#brand-home').addEventListener('click', (event) => {
 skipButton.addEventListener('click', () => {
   if (stage === 'draw') showReveal(true);
   else if (stage === 'reveal') {
-    revealScreen.classList.add('is-instant');
     cancelSequence();
-    readyReveal();
+    publishResult(true);
   }
 });
 window.addEventListener('resize', () => { if (stage === 'draw') updateCylinderSize(); }, { passive: true });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { effects.stop(); sound.stop(); }
-  else if (stage === 'reveal') effects.start(selectedRide.theme);
+  else if (stage === 'reveal') effects.start(selectedRide.theme, {
+    cinematic: revealPhase !== 'result',
+    elapsed: Math.max(revealPhase === 'result' ? 5.5 : 0, (performance.now() - revealStartedAt) / 1000),
+  });
 });
 motionQuery.addEventListener('change', () => {
   if (stage === 'intro') showTicket();
   else if (stage === 'draw' && motionQuery.matches) showReveal(true);
   else if (stage === 'reveal' && motionQuery.matches) {
-    revealScreen.classList.add('is-instant');
     cancelSequence();
-    readyReveal();
+    publishResult(true);
   }
 });
 

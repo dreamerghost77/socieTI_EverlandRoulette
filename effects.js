@@ -17,6 +17,11 @@
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const mix = (a, b, amount) => a + (b - a) * amount;
   const point = (x, y) => ({ x, y });
+  const ease = (start, end, value) => {
+    const amount = clamp((value - start) / (end - start), 0, 1);
+    return amount * amount * (3 - 2 * amount);
+  };
+  const NEUTRAL_PALETTE = Object.freeze({ main: '#e8e7ec', accent: '#afb8d0', light: '#fff9eb' });
 
   function cubic(a, b, c, d, t) {
     const inverse = 1 - t;
@@ -46,34 +51,47 @@
       this.motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.running = false;
       this.frameId = null;
+      this.elapsedOffset = 0;
+      this.elapsedTime = 0;
       this.onResize = () => {
         this.resize();
-        if (this.running && this.reducedMotion) this.render(2.6);
+        if (this.running && this.reducedMotion) this.render(this.elapsedTime);
       };
       this.onMotionChange = () => {
+        const elapsed = this.elapsed;
         this.reducedMotion = this.motionQuery.matches;
         if (!this.running) return;
         this.cancelFrame();
-        if (this.reducedMotion) this.render(2.6);
-        else {
-          this.startedAt = performance.now();
-          this.frameId = requestAnimationFrame(this.onFrame);
-        }
+        this.elapsedOffset = this.reducedMotion && this.cinematic ? Math.max(elapsed, 5.5) : elapsed;
+        this.elapsedTime = this.elapsedOffset;
+        this.startedAt = performance.now();
+        this.render(this.elapsedTime);
+        if (!this.reducedMotion) this.frameId = requestAnimationFrame(this.onFrame);
       };
       this.onFrame = (timestamp) => {
         if (!this.running || this.reducedMotion) return;
-        this.render((timestamp - this.startedAt) / 1000);
+        this.elapsedTime = this.elapsedOffset + (timestamp - this.startedAt) / 1000;
+        this.render(this.elapsedTime);
         this.frameId = requestAnimationFrame(this.onFrame);
       };
     }
 
-    start(theme, { intensity = 1 } = {}) {
+    get elapsed() {
+      if (!this.running || this.reducedMotion) return this.elapsedTime;
+      return this.elapsedOffset + (performance.now() - this.startedAt) / 1000;
+    }
+
+    start(theme, { intensity = 1, cinematic = false, elapsed = 0 } = {}) {
       this.stop();
       if (!this.ctx) return;
       this.theme = THEMES.includes(theme) ? theme : 'magic';
       this.palette = PALETTES[this.theme];
       this.intensity = clamp(Number.isFinite(intensity) ? intensity : 1, 0.2, 2);
+      this.cinematic = Boolean(cinematic);
       this.reducedMotion = this.motionQuery.matches;
+      this.elapsedOffset = Math.max(0, Number.isFinite(elapsed) ? elapsed : 0);
+      if (this.reducedMotion) this.elapsedOffset = Math.max(this.elapsedOffset, this.cinematic ? 5.5 : 2.6);
+      this.elapsedTime = this.elapsedOffset;
       this.particles = Array.from({ length: Math.min(140, Math.round(70 * this.intensity)) }, (_, index) => ({
         angle: Math.random() * TAU,
         radius: 90 + Math.random() * 360,
@@ -87,11 +105,12 @@
       window.addEventListener('resize', this.onResize, { passive: true });
       this.motionQuery.addEventListener?.('change', this.onMotionChange);
       this.resize();
-      this.render(this.reducedMotion ? 2.6 : 0);
+      this.render(this.elapsedTime);
       if (!this.reducedMotion) this.frameId = requestAnimationFrame(this.onFrame);
     }
 
     stop() {
+      if (this.running) this.elapsedTime = this.elapsed;
       this.running = false;
       this.cancelFrame();
       window.removeEventListener('resize', this.onResize);
@@ -125,24 +144,293 @@
       ctx.setTransform(this.pixelRatio, 0, 0, this.pixelRatio, 0, 0);
       ctx.clearRect(0, 0, this.width, this.height);
       ctx.save();
-      ctx.translate(this.centerX, this.centerY);
-      ctx.scale(this.scale, this.scale);
-      this.drawAtmosphere(time);
-      this[`draw${this.theme[0].toUpperCase()}${this.theme.slice(1)}`](time);
-      this.drawParticles(time);
-      if (!this.reducedMotion) this.drawReveal(time);
+      const settling = this.cinematic ? ease(4.6, 5.5, time) : 1;
+      ctx.translate(mix(this.width * 0.5, this.centerX, settling), mix(this.height * 0.46, this.centerY, settling));
+      const sceneScale = this.scale * mix(1.12, 1, settling);
+      ctx.scale(sceneScale, sceneScale);
+      if (this.cinematic && time < 5.5 && !this.reducedMotion) this.drawCinematic(time);
+      else {
+        this.drawAtmosphere(time);
+        this.drawMotif(time);
+        this.drawParticles(time);
+        if (!this.reducedMotion && !this.cinematic) this.drawReveal(time);
+      }
       ctx.restore();
     }
 
-    drawAtmosphere(time) {
+    drawMotif(time) {
+      this[`draw${this.theme[0].toUpperCase()}${this.theme.slice(1)}`](time);
+    }
+
+    drawAtmosphere(time, palette = this.palette, opacity = 1) {
+      if (opacity <= 0) return;
       const ctx = this.ctx;
       const radius = 470 + Math.sin(time * 0.8) * 12;
       const glow = ctx.createRadialGradient(0, 0, 20, 0, 0, radius);
-      glow.addColorStop(0, `${this.palette.main}25`);
-      glow.addColorStop(0.55, `${this.palette.main}12`);
-      glow.addColorStop(1, `${this.palette.main}00`);
+      glow.addColorStop(0, `${palette.main}25`);
+      glow.addColorStop(0.55, `${palette.main}12`);
+      glow.addColorStop(1, `${palette.main}00`);
+      ctx.save();
+      ctx.globalAlpha *= opacity;
       ctx.fillStyle = glow;
       ctx.fillRect(-radius, -radius, radius * 2, radius * 2);
+      ctx.restore();
+    }
+
+    drawCinematic(time) {
+      const ctx = this.ctx;
+      const colorArrival = ease(1.2, 2.4, time);
+      this.drawAtmosphere(time, NEUTRAL_PALETTE, 1 - colorArrival);
+      this.drawAtmosphere(time, this.palette, colorArrival);
+      this.drawWishArrival(time, colorArrival);
+      if (time >= 1.2) this.drawClues(time);
+      if (time >= 2.7) {
+        const emergence = ease(2.7, 4.8, time);
+        const aperture = mix(24, 560, emergence);
+        ctx.save();
+        // A growing opening exposes only fragments before the complete ride appears.
+        ctx.beginPath();
+        ctx.ellipse(0, -8, aperture, aperture * 0.78, -0.08, 0, TAU);
+        ctx.clip();
+        ctx.globalAlpha = mix(0.16, 1, emergence);
+        this.drawMotif(time);
+        ctx.restore();
+        if (emergence < 1) {
+          ctx.save();
+          ctx.globalAlpha = Math.sin(emergence * Math.PI) * 0.65;
+          this.ellipse(0, -8, aperture, aperture * 0.78, this.palette.light, 1, 8, -0.08);
+          const sweepX = mix(-470, 470, emergence);
+          const sweep = ctx.createLinearGradient(sweepX - 35, 0, sweepX + 35, 0);
+          sweep.addColorStop(0, `${this.palette.main}00`);
+          sweep.addColorStop(0.5, `${this.palette.light}33`);
+          sweep.addColorStop(1, `${this.palette.main}00`);
+          ctx.fillStyle = sweep;
+          ctx.beginPath();
+          ctx.ellipse(0, -8, aperture, aperture * 0.78, -0.08, 0, TAU);
+          ctx.clip();
+          ctx.fillRect(sweepX - 35, -420, 70, 840);
+          ctx.restore();
+        }
+      }
+      this.drawParticles(time, time < 1.2 ? NEUTRAL_PALETTE : this.palette, mix(0.45, 1, colorArrival));
+      if (time >= 4.8) this.drawCinematicBurst(time);
+    }
+
+    drawWishArrival(time, colorArrival) {
+      const ctx = this.ctx;
+      const presence = 1 - ease(2.05, 3.05, time);
+      if (presence <= 0) return;
+      const arrival = ease(0, 1.2, time);
+      const x = mix(350, 0, arrival);
+      const y = mix(-340, 0, arrival);
+      const color = colorArrival > 0.5 ? this.palette.light : NEUTRAL_PALETTE.light;
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = presence;
+      // Neutral depth rings make the opening feel like a passage through light.
+      for (let ring = 0; ring < 5; ring += 1) {
+        const depth = (time * 0.48 + ring / 5) % 1;
+        const radius = 40 + depth ** 2 * 610;
+        ctx.save();
+        ctx.globalAlpha *= (1 - depth) * 0.28;
+        this.ellipse(0, 0, radius, radius * 0.7, color, 1 + depth, 3, -0.18);
+        ctx.restore();
+      }
+      if (arrival < 1) {
+        const tail = ctx.createLinearGradient(x, y, x + 210, y - 204);
+        tail.addColorStop(0, `${color}f2`);
+        tail.addColorStop(0.35, `${color}55`);
+        tail.addColorStop(1, `${color}00`);
+        ctx.strokeStyle = tail;
+        ctx.lineCap = 'round';
+        for (let trail = 0; trail < 3; trail += 1) {
+          ctx.lineWidth = 1 + trail * 3;
+          ctx.globalAlpha = presence * (0.85 - trail * 0.22);
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + 210, y - 204);
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = presence;
+      ctx.translate(x, y);
+      ctx.rotate(time * 0.11);
+      const starSize = 9 + arrival * 9 + Math.sin(time * 5) * 1.5;
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 22;
+      ctx.beginPath();
+      ctx.moveTo(0, -starSize * 2.4);
+      ctx.lineTo(starSize * 0.33, -starSize * 0.33);
+      ctx.lineTo(starSize * 2.4, 0);
+      ctx.lineTo(starSize * 0.33, starSize * 0.33);
+      ctx.lineTo(0, starSize * 2.4);
+      ctx.lineTo(-starSize * 0.33, starSize * 0.33);
+      ctx.lineTo(-starSize * 2.4, 0);
+      ctx.lineTo(-starSize * 0.33, -starSize * 0.33);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    drawClues(time) {
+      const ctx = this.ctx;
+      const strength = ease(1.2, 2.4, time) * (1 - ease(3.2, 4.9, time));
+      if (strength <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = strength * 0.75;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.strokeStyle = this.palette.main;
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = this.palette.main;
+      ctx.shadowBlur = 9;
+      if (this.theme === 'timber') {
+        for (let line = 0; line < 8; line += 1) {
+          const offset = ((time * 180 + line * 97) % 760) - 380;
+          const y = -165 + line * 48;
+          ctx.globalAlpha = strength * (0.28 + line % 3 * 0.18);
+          ctx.beginPath();
+          ctx.moveTo(offset - 85, y - 56);
+          ctx.lineTo(offset - 33, y - 84);
+          ctx.lineTo(offset + 18, y - 26);
+          ctx.lineTo(offset + 65, y + 42);
+          ctx.stroke();
+          ctx.strokeStyle = this.palette.accent;
+          ctx.beginPath();
+          ctx.moveTo(offset - 78, y - 52);
+          ctx.lineTo(offset - 28, y - 76);
+          ctx.lineTo(offset + 24, y - 20);
+          ctx.stroke();
+          ctx.strokeStyle = this.palette.main;
+        }
+      } else if (this.theme === 'river') {
+        for (let ripple = 0; ripple < 5; ripple += 1) {
+          const phase = (time * 0.5 + ripple / 5) % 1;
+          ctx.globalAlpha = strength * (1 - phase) * 0.7;
+          this.ellipse(Math.sin(ripple * 2.6) * 135, Math.cos(ripple * 2.1) * 55, 24 + phase * 285, 8 + phase * 86, this.palette.light, 1.4, 5, Math.sin(time * 0.4) * 0.08);
+        }
+        ctx.globalAlpha = strength * 0.4;
+        for (let wave = 0; wave < 4; wave += 1) {
+          const y = -90 + wave * 63;
+          ctx.beginPath();
+          ctx.moveTo(-320, y);
+          ctx.bezierCurveTo(-100, y - 60 * Math.sin(time + wave), 100, y + 60 * Math.cos(time + wave), 320, y);
+          ctx.stroke();
+        }
+      } else if (this.theme === 'thunder') {
+        for (let bolt = 0; bolt < 5; bolt += 1) {
+          const angle = bolt / 5 * TAU + 0.3;
+          const pulse = 0.2 + Math.sin(time * 7 + bolt) ** 10 * 0.8;
+          ctx.save();
+          ctx.rotate(angle);
+          ctx.globalAlpha = strength * pulse;
+          ctx.beginPath();
+          ctx.moveTo(45, 0);
+          ctx.lineTo(115, -22);
+          ctx.lineTo(106, 15);
+          ctx.lineTo(199, -13);
+          ctx.lineTo(250, -3);
+          ctx.stroke();
+          ctx.restore();
+        }
+        for (let arc = 0; arc < 4; arc += 1) {
+          const phase = (time * 0.6 + arc / 4) % 1;
+          ctx.globalAlpha = strength * (1 - phase) * 0.55;
+          this.ellipse(0, 90, 35 + phase * 250, 11 + phase * 55, this.palette.accent, 2, 7);
+        }
+      } else if (this.theme === 'neon') {
+        for (let streak = 0; streak < 18; streak += 1) {
+          const x = 460 - ((time * 460 + streak * 67) % 920);
+          const y = -220 + streak * 26;
+          ctx.globalAlpha = strength * (0.2 + streak % 4 * 0.15);
+          ctx.strokeStyle = streak % 2 ? this.palette.main : this.palette.accent;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + 100, y - 19);
+          ctx.stroke();
+        }
+      } else if (this.theme === 'storm') {
+        for (let ribbon = 0; ribbon < 5; ribbon += 1) {
+          ctx.globalAlpha = strength * (0.35 + ribbon % 2 * 0.2);
+          ctx.beginPath();
+          for (let step = 0; step < 50; step += 1) {
+            const progress = step / 49;
+            const radius = 38 + progress * 280;
+            const angle = progress * TAU * 0.9 - time * 1.7 + ribbon / 5 * TAU;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius * 0.64;
+            if (step === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+      } else if (this.theme === 'rock') {
+        for (let ring = 0; ring < 3; ring += 1) {
+          const radius = 72 + ring * 68;
+          ctx.globalAlpha = strength * (0.55 - ring * 0.13);
+          this.ellipse(0, 0, radius, radius, this.palette.main, 1.4, 6);
+          for (let dot = 0; dot < 3; dot += 1) {
+            const angle = time * (ring % 2 ? -1 : 1) + dot / 3 * TAU;
+            ctx.fillStyle = this.palette.light;
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle) * radius, Math.sin(angle) * radius, 3.5, 0, TAU);
+            ctx.fill();
+          }
+        }
+      } else if (this.theme === 'twist') {
+        ctx.globalAlpha = strength * 0.7;
+        this.ellipse(0, 0, 280, 84, this.palette.main, 2, 9, time * 0.6);
+        this.ellipse(0, 0, 260, 84, this.palette.accent, 2, 9, -time * 0.6 + 0.8);
+        this.ellipse(0, 0, 36, 36, this.palette.light, 1.2, 7);
+      } else {
+        for (let spark = 0; spark < 12; spark += 1) {
+          const angle = spark / 12 * TAU + time * 0.12;
+          const radius = 90 + Math.sin(time * 0.8 + spark) * 55 + spark % 3 * 66;
+          const x = Math.cos(angle) * radius;
+          const y = Math.sin(angle) * radius * 0.74;
+          const size = 3 + (Math.sin(time * 2 + spark) + 1) * 2;
+          ctx.globalAlpha = strength * (0.3 + (Math.sin(time * 2 + spark) + 1) * 0.23);
+          ctx.beginPath();
+          ctx.moveTo(x - size, y);
+          ctx.lineTo(x + size, y);
+          ctx.moveTo(x, y - size * 1.6);
+          ctx.lineTo(x, y + size * 1.6);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    drawCinematicBurst(time) {
+      const progress = clamp((time - 4.8) / 0.65, 0, 1);
+      const strength = Math.sin(progress * Math.PI);
+      if (strength <= 0) return;
+      const ctx = this.ctx;
+      const radius = 48 + (1 - (1 - progress) ** 3) * 610;
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = strength * 0.7;
+      this.ellipse(0, -8, radius, radius * 0.78, this.palette.light, 2, 10, -0.08);
+      this.ellipse(0, -8, radius * 0.9, radius * 0.7, this.palette.main, 1, 8, -0.08);
+      ctx.strokeStyle = this.palette.light;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for (let ray = 0; ray < 32; ray += 1) {
+        const angle = ray / 32 * TAU;
+        const inner = radius * (0.7 + ray % 3 * 0.04);
+        ctx.moveTo(Math.cos(angle) * inner, -8 + Math.sin(angle) * inner * 0.78);
+        ctx.lineTo(Math.cos(angle) * radius, -8 + Math.sin(angle) * radius * 0.78);
+      }
+      ctx.stroke();
+      const glow = ctx.createRadialGradient(0, -8, 0, 0, -8, 220);
+      glow.addColorStop(0, `${this.palette.light}a0`);
+      glow.addColorStop(0.3, `${this.palette.main}38`);
+      glow.addColorStop(1, `${this.palette.main}00`);
+      ctx.globalAlpha = strength * (1 - progress) * 0.55;
+      ctx.fillStyle = glow;
+      ctx.fillRect(-220, -228, 440, 440);
+      ctx.restore();
     }
 
     strokePath(points, color, width = 2, glow = 0, closed = false) {
@@ -544,18 +832,18 @@
       }
     }
 
-    drawParticles(time) {
+    drawParticles(time, palette = this.palette, opacity = 1) {
       const ctx = this.ctx;
       ctx.save();
-      ctx.fillStyle = this.palette.light;
-      ctx.strokeStyle = this.palette.light;
+      ctx.fillStyle = palette.light;
+      ctx.strokeStyle = palette.light;
       ctx.lineWidth = 1;
       for (const particle of this.particles) {
         const drift = this.reducedMotion ? 0 : time * particle.speed;
         const angle = particle.angle + drift * 0.035;
         const x = Math.cos(angle) * particle.radius + Math.sin(drift + particle.phase) * 9;
         const y = Math.sin(angle) * particle.radius * 0.75 - Math.sin(drift * 0.6 + particle.phase) * 12;
-        ctx.globalAlpha = 0.15 + (Math.sin(drift * 1.2 + particle.phase) + 1) * 0.24;
+        ctx.globalAlpha = (0.15 + (Math.sin(drift * 1.2 + particle.phase) + 1) * 0.24) * opacity;
         if (particle.star) {
           const size = particle.size * 2;
           ctx.beginPath();

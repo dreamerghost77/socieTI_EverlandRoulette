@@ -90,18 +90,25 @@
         <p class="draw-bottom-note"><svg aria-hidden="true"><use href="#icon-spark"></use></svg>당신의 티켓에 채워질 첫 번째 목적지</p>
       </section>
 
-      <section class="screen reveal-screen" id="reveal-screen" aria-labelledby="reveal-heading" hidden>
+      <section class="screen reveal-screen" id="reveal-screen" aria-labelledby="cinematic-heading" hidden>
         <canvas class="effects-canvas" id="effects-canvas" aria-hidden="true"></canvas>
         <div class="reveal-vignette" aria-hidden="true"></div><div class="reveal-flare" aria-hidden="true"></div>
-        <div class="reveal-content">
+        <div class="cinematic-caption" id="cinematic-caption">
+          <p class="eyebrow">A CHANCE BECOMES AN ADVENTURE</p>
+          <h1 id="cinematic-heading" tabindex="-1">어떤 모험이 기다릴까요?</h1>
+          <p id="cinematic-hint">작은 빛 하나가, 오늘의 목적지를 찾아갑니다.</p>
+          <div class="cinematic-progress" aria-hidden="true"><span></span></div>
+          <span class="cinematic-step" id="cinematic-step">01 / ARRIVAL</span>
+        </div>
+        <div class="reveal-content" id="reveal-content" hidden inert>
           <p class="eyebrow reveal-eyebrow"><span class="status-dot"></span> ADVENTURE UNLOCKED</p>
           <p class="reveal-tag" id="reveal-tag"></p>
           <h1 id="reveal-heading" tabindex="-1"></h1>
           <p class="reveal-description" id="reveal-description"></p>
-          <div class="reveal-pass" aria-hidden="true"><svg class="reveal-pass-icon" id="reveal-pass-icon"><use href="#icon-timber"></use></svg><div><span>YOUR NEXT STOP</span><strong id="reveal-pass-name"></strong><small>01 / ATTRACTION CONFIRMED</small></div><span class="pass-check">✓</span></div>
+          <div class="reveal-pass" aria-hidden="true"><svg class="reveal-pass-icon" id="reveal-pass-icon"><use></use></svg><div><span>YOUR NEXT STOP</span><strong id="reveal-pass-name"></strong><small>01 / ATTRACTION CONFIRMED</small></div><span class="pass-check">✓</span></div>
           <div class="reveal-actions"><button class="primary-button" id="keep-button" type="button" disabled>티켓에 담기<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button><button class="text-button" id="redraw-button" type="button" disabled>한 번 더 뽑기 <span aria-hidden="true">↻</span></button></div>
         </div>
-        <span class="reveal-index" id="reveal-index" aria-hidden="true"></span>
+        <span class="reveal-index" id="reveal-index" aria-hidden="true" hidden></span>
       </section>
     </main>
 
