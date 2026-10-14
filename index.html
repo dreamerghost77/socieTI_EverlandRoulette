@@ -2,155 +2,42 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f7f3e9">
-    <meta name="description" content="에버랜드 놀이기구와 미션을 원하는 순서로 따로 뽑아 보세요.">
-    <title>에버랜드 어드벤처 아케이드</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#050505">
+    <meta name="description" content="에버랜드 놀이기구와 미션을 룰렛으로 뽑아 보세요.">
+    <title>에버랜드 룰렛</title>
     <link rel="stylesheet" href="styles.css">
     <script src="app.js" defer></script>
   </head>
   <body>
-    <main class="page-shell">
-      <header class="topbar">
-        <a class="brand" href="./" aria-label="에버랜드 미션 클럽 홈">
-          <span class="brand-mark" aria-hidden="true">✦</span>
-          <span>EVERLAND <b>MISSION CLUB</b></span>
-        </a>
-        <span class="topbar-note"><span class="status-dot"></span> ADVENTURE ARCADE</span>
-      </header>
-
-      <section class="hero" aria-labelledby="page-title">
-        <div class="hero-copy">
-          <p class="eyebrow">MAKE YOUR OWN PARK DAY</p>
-          <h1 id="page-title">오늘의 어드벤처,<br><span>원하는 순서로 뽑아요</span></h1>
-          <p class="hero-description">놀이기구와 미션은 각각 따로 뽑을 수 있어요.<br>먼저 가고 싶은 곳부터 골라보세요.</p>
-        </div>
-        <div class="hero-art" aria-hidden="true">
-          <span class="hero-orbit"></span>
-          <span class="hero-star star-one">✦</span>
-          <span class="hero-star star-two">✧</span>
-          <div class="hero-ticket">
-            <span>ADVENTURE</span>
-            <strong>PASS</strong>
-            <small>NO. 01 <i>✦</i></small>
-          </div>
-          <span class="hero-spark">✳</span>
-        </div>
+    <main class="app-screen">
+      <section class="home-screen" id="home-screen" aria-label="룰렛 종류 선택">
+        <button class="home-button ride-button" type="button" data-kind="ride">놀이기구 뽑기</button>
+        <button class="home-button mission-button" type="button" data-kind="mission">미션 뽑기</button>
       </section>
 
-      <section class="draw-grid" aria-label="놀이기구와 미션을 따로 뽑는 추첨기">
-        <article class="draw-card ride-card" id="ride-card" aria-labelledby="ride-title">
-          <div class="card-index">
-            <span class="index-number">01</span>
-            <span class="index-label">DESTINATION REEL</span>
-            <span class="index-light" aria-hidden="true"></span>
-          </div>
-          <div class="card-heading">
-            <div>
-              <p class="card-kicker">WHERE TO?</p>
-              <h2 id="ride-title">어디로 갈까요?</h2>
-              <p class="card-description">오늘의 놀이기구를 골라요</p>
-            </div>
-            <span class="category-stamp ride-stamp" aria-hidden="true">RIDE<br>✦</span>
-          </div>
-
-          <div class="slot-screen" role="group" aria-label="놀이기구 슬롯">
-            <span class="screen-corner corner-left" aria-hidden="true">✦</span>
-            <span class="screen-corner corner-right" aria-hidden="true">✦</span>
-            <div class="slot-row" aria-hidden="true"><span class="slot-neighbor" id="ride-prev">오늘의 목적지는?</span></div>
-            <div class="slot-current-row">
-              <span class="slot-ornament" aria-hidden="true">✦</span>
-              <strong class="slot-current" id="ride-current" aria-live="off">돌려서 정하기</strong>
-              <span class="slot-ornament" aria-hidden="true">✦</span>
-            </div>
-            <div class="slot-row" aria-hidden="true"><span class="slot-neighbor" id="ride-next">준비됐나요?</span></div>
-          </div>
-
-          <div class="machine-meta"><span>SPIN THE DESTINATION</span><span id="ride-meta">READY</span></div>
-          <button class="draw-button" id="ride-button" type="button">
-            <span class="draw-button-icon" aria-hidden="true">↻</span>
-            <span id="ride-button-label">목적지 뽑기</span>
-            <span class="draw-button-arrow" aria-hidden="true">→</span>
-          </button>
-          <p class="card-footnote">원하는 때에 다시 뽑을 수 있어요</p>
-        </article>
-
-        <article class="draw-card mission-card" id="mission-card" aria-labelledby="mission-title">
-          <div class="card-index">
-            <span class="index-number">02</span>
-            <span class="index-label">CHALLENGE REEL</span>
-            <span class="index-light" aria-hidden="true"></span>
-          </div>
-          <div class="card-heading">
-            <div>
-              <p class="card-kicker">WHAT TO DO?</p>
-              <h2 id="mission-title">무슨 미션일까요?</h2>
-              <p class="card-description">오늘의 작은 도전을 골라요</p>
-            </div>
-            <span class="category-stamp mission-stamp" aria-hidden="true">PLAY<br>✧</span>
-          </div>
-
-          <div class="slot-screen" role="group" aria-label="미션 슬롯">
-            <span class="screen-corner corner-left" aria-hidden="true">✧</span>
-            <span class="screen-corner corner-right" aria-hidden="true">✧</span>
-            <div class="slot-row" aria-hidden="true"><span class="slot-neighbor" id="mission-prev">오늘의 도전은?</span></div>
-            <div class="slot-current-row">
-              <span class="slot-ornament" aria-hidden="true">✧</span>
-              <strong class="slot-current" id="mission-current" aria-live="off">돌려서 정하기</strong>
-              <span class="slot-ornament" aria-hidden="true">✧</span>
-            </div>
-            <div class="slot-row" aria-hidden="true"><span class="slot-neighbor" id="mission-next">준비됐나요?</span></div>
-          </div>
-
-          <div class="machine-meta"><span>SPIN THE CHALLENGE</span><span id="mission-meta">READY</span></div>
-          <button class="draw-button" id="mission-button" type="button">
-            <span class="draw-button-icon" aria-hidden="true">↻</span>
-            <span id="mission-button-label">미션 뽑기</span>
-            <span class="draw-button-arrow" aria-hidden="true">→</span>
-          </button>
-          <p class="card-footnote">목적지를 뽑기 전에도 가능해요</p>
-        </article>
-      </section>
-
-      <section class="pass-section" aria-labelledby="pass-title">
-        <div class="section-label"><span>YOUR PARK DAY</span><span>COLLECT YOUR PICKS</span></div>
-        <div class="adventure-pass">
-          <div class="pass-main">
-            <div class="pass-heading">
-              <div>
-                <p class="pass-kicker">ONE DAY · YOUR WAY</p>
-                <h2 id="pass-title">오늘의 어드벤처 티켓</h2>
-              </div>
-              <span class="pass-badge" aria-hidden="true">✦<small>PLAY!</small></span>
-            </div>
-            <div class="pass-route">
-              <div class="route-stop">
-                <span class="route-label"><i>01</i> DESTINATION</span>
-                <strong id="pass-ride">목적지를 기다리는 중</strong>
-              </div>
-              <span class="route-plus" aria-hidden="true">+</span>
-              <div class="route-stop">
-                <span class="route-label"><i>02</i> MISSION</span>
-                <strong id="pass-mission">미션을 기다리는 중</strong>
-              </div>
-            </div>
-            <p class="pair-result" id="pair-result" role="status" aria-live="polite">둘 다 뽑으면 오늘의 조합이 완성돼요.</p>
-          </div>
-          <div class="pass-stub" aria-hidden="true">
-            <span class="stub-label">ADMIT ONE</span>
-            <span class="stub-star">✦</span>
-            <span class="stub-barcode"></span>
-            <span class="stub-number">NO. 01</span>
-          </div>
+      <section class="roulette-screen" id="roulette-screen" aria-label="룰렛" hidden>
+        <p class="roulette-heading" id="roulette-heading"></p>
+        <div class="roulette-stage">
+          <span class="pointer" aria-hidden="true"></span>
+          <div class="roulette-wheel" id="roulette-wheel" role="img" aria-label="돌아가는 룰렛"></div>
+          <span class="wheel-hub" aria-hidden="true"><span>GO</span><i>✦</i></span>
         </div>
-        <button class="reset-button" id="reset-button" type="button" disabled>선택 비우기</button>
-      </section>
+        <p class="spin-hint" id="spin-hint" role="status" aria-live="polite">돌아가는 중...</p>
 
-      <footer class="footer">
-        <span>즐거운 하루는 안전하게!</span>
-        <span class="footer-star" aria-hidden="true">✦</span>
-        <span>운영 여부와 이용 제한은 방문 당일 현장 안내를 확인해 주세요.</span>
-      </footer>
+        <section class="winner-overlay" id="winner-overlay" aria-labelledby="winner-title" aria-live="polite" hidden>
+          <span class="winner-spark winner-spark-left" aria-hidden="true">✦</span>
+          <span class="winner-spark winner-spark-right" aria-hidden="true">✧</span>
+          <p class="winner-kicker" id="winner-kicker">축하해요!</p>
+          <h1 class="winner-title" id="winner-title"></h1>
+          <p class="winner-detail" id="winner-detail"></p>
+          <div class="winner-actions">
+            <button class="winner-button primary-action" id="spin-again" type="button">한 번 더 뽑기</button>
+            <button class="winner-button secondary-action" id="back-home" type="button">다른 룰렛 선택</button>
+          </div>
+        </section>
+      </section>
+      <div class="confetti-layer" id="confetti-layer" aria-hidden="true"></div>
     </main>
   </body>
 </html>
