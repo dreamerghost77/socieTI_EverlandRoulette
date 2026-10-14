@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#fff8ed">
+    <meta name="description" content="에버랜드 놀이기구와 오늘의 미션을 한 번에 뽑아 보세요.">
+    <title>에버랜드 미션 룰렛</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="에버랜드 미션 룰렛 홈">
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <span>EVERLAND <b>PLAY CLUB</b></span>
+        </a>
+        <span class="topbar-note"><span class="status-dot"></span> 오늘의 랜덤 코스</span>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">A LITTLE ADVENTURE, A LOT OF FUN</p>
+        <h1 id="page-title">오늘의 미션을<br class="mobile-break"> 뽑아볼까요?</h1>
+        <p class="intro-copy">놀이기구와 미션을 한 번에 뽑고<br class="mobile-break"> 우리만의 에버랜드 코스를 완성해요.</p>
+      </section>
+
+      <section class="roulette-card" aria-label="놀이기구와 미션 룰렛">
+        <div class="wheels-grid">
+          <article class="wheel-panel ride-panel">
+            <div class="wheel-heading">
+              <span class="wheel-icon ride-icon" aria-hidden="true">↗</span>
+              <div>
+                <p class="wheel-kicker">FIRST, PICK A RIDE</p>
+                <h2>어디서?</h2>
+              </div>
+            </div>
+            <div class="wheel-stage">
+              <span class="pointer" aria-hidden="true"></span>
+              <div class="wheel" id="ride-wheel" role="img" aria-label="놀이기구 룰렛"></div>
+              <span class="wheel-hub" aria-hidden="true"><span>GO!</span></span>
+            </div>
+            <p class="wheel-caption">짜릿한 놀이기구를 골라봐요</p>
+          </article>
+
+          <div class="plus-sign" aria-hidden="true">+</div>
+
+          <article class="wheel-panel mission-panel">
+            <div class="wheel-heading">
+              <span class="wheel-icon mission-icon" aria-hidden="true">✦</span>
+              <div>
+                <p class="wheel-kicker">THEN, PICK A MISSION</p>
+                <h2>무엇을 할까?</h2>
+              </div>
+            </div>
+            <div class="wheel-stage">
+              <span class="pointer" aria-hidden="true"></span>
+              <div class="wheel" id="mission-wheel" role="img" aria-label="미션 룰렛"></div>
+              <span class="wheel-hub" aria-hidden="true"><span>GO!</span></span>
+            </div>
+            <p class="wheel-caption">오늘의 작은 미션도 함께!</p>
+          </article>
+        </div>
+
+        <div class="action-area">
+          <p class="action-hint" id="action-hint">두 룰렛이 동시에 돌아가요. 준비됐나요?</p>
+          <button class="spin-button" id="spin-button" type="button">
+            <span class="button-sparkle" aria-hidden="true">✦</span>
+            <span id="button-label">룰렛 돌리기</span>
+            <span class="button-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="result-card" id="result-card" aria-labelledby="result-heading" aria-live="polite" aria-atomic="true">
+        <div class="result-topline">
+          <span class="result-star" aria-hidden="true">✦</span>
+          <p id="result-heading">오늘의 에버랜드 미션</p>
+          <span class="result-star" aria-hidden="true">✦</span>
+        </div>
+        <p class="result-placeholder" id="result-placeholder">룰렛을 돌리면 오늘의 조합이 여기에 나와요</p>
+        <p class="result-text" id="result-text" hidden></p>
+        <p class="result-footnote">운영 여부와 이용 제한은 방문 당일 현장 안내를 확인해 주세요.</p>
+      </section>
+
+      <footer class="footer">
+        <span>함께 웃고, 안전하게 즐기기</span>
+        <span class="footer-sparkle" aria-hidden="true">✧</span>
+        <span>EVERLAND MISSION ROULETTE</span>
+      </footer>
+    </main>
+  </body>
+</html>
