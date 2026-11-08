@@ -8,7 +8,10 @@
     <title>에버랜드 어드벤처 패스 — 오늘의 모험 뽑기</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23090e10'/%3E%3Ctext x='17' y='48' font-family='Georgia,serif' font-style='italic' font-size='53' fill='%23c4f89a'%3Ee%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="name-draw.css">
     <script src="effects.js" defer></script>
+    <script src="participants.js" defer></script>
+    <script src="name-draw.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body data-stage="intro">
@@ -57,10 +60,11 @@
               </div>
               <div class="ticket-slots">
                 <div class="ticket-slot ride-slot"><span class="slot-number">01</span><div><span class="slot-label">ATTRACTION / 놀이기구</span><strong id="ticket-ride-name">아직 비어 있는 모험</strong></div><span class="slot-state" id="slot-state" aria-hidden="true">✧</span></div>
-                <div class="ticket-slot mission-slot"><span class="slot-number">02</span><div><span class="slot-label">MISSION / 미션</span><strong>아직 정해지지 않았어요</strong></div><span class="slot-state" aria-hidden="true">＋</span></div>
+                <div class="ticket-slot owner-slot"><span class="slot-number">02</span><div><span class="slot-label">TICKET HOLDER / 티켓 주인</span><strong id="ticket-owner-name">누구의 모험이 될까요?</strong></div><span class="slot-state" id="owner-slot-state" aria-hidden="true">✧</span></div>
+                <div class="ticket-slot mission-slot"><span class="slot-number">03</span><div><span class="slot-label">MISSION / 미션</span><strong>아직 정해지지 않았어요</strong></div><span class="slot-state" aria-hidden="true">＋</span></div>
               </div>
             </div>
-            <div class="ticket-stub"><span class="stub-label">YOUR<br>ADVENTURE<br>STARTS HERE</span><svg class="stub-spark" aria-hidden="true"><use href="#icon-spark"></use></svg><div class="barcode" aria-hidden="true"></div><span class="ticket-number">EV — 0001</span></div>
+            <div class="ticket-stub"><span class="stub-label">YOUR<br>ADVENTURE<br>STARTS HERE</span><strong class="stub-owner" id="stub-owner" aria-label="티켓 주인 미정">—</strong><svg class="stub-spark" aria-hidden="true"><use href="#icon-spark"></use></svg><div class="barcode" aria-hidden="true"></div><span class="ticket-number" id="ticket-number">EV — 0001</span></div>
             <span class="ticket-stamp" id="ticket-stamp" aria-hidden="true">ADVENTURE<br>UNLOCKED</span>
           </article>
           <span class="orbit-label orbit-label-bottom" aria-hidden="true">✦ NOT JUST A DESTINATION. A NEW STORY.</span>
@@ -69,9 +73,15 @@
         <div class="ticket-actions">
           <div class="ticket-ready"><span class="status-dot"></span><span id="ticket-ready-label">티켓에 모험을 채울 준비가 됐어요</span></div>
           <button class="primary-button draw-button" id="draw-button" type="button" disabled><svg aria-hidden="true"><use href="#icon-spark"></use></svg><span id="draw-button-label">놀이기구 뽑기</span><svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button>
-          <span class="draw-note">8개의 놀이기구 · 같은 확률 · 뜻밖의 즐거움</span>
+          <span class="draw-note" id="draw-note">4개의 팀 · 팀당 4명 · 중복 없는 티켓</span>
         </div>
         <details class="attraction-pool" id="attraction-pool"><summary>어떤 모험을 만날 수 있나요? <span>＋</span></summary><div class="pool-list" id="pool-list"></div></details>
+        <details class="assignment-details" id="assignment-details">
+          <summary><span>참가자 배정 현황</span><span id="assignment-count">0 / 16명</span><span class="assignment-expand" aria-hidden="true">＋</span></summary>
+          <div class="assignment-teams" id="assignment-teams"></div>
+          <div class="waiting-participants"><p id="waiting-label">아직 티켓을 기다리는 참가자</p><div id="waiting-list"></div></div>
+          <div class="assignment-controls"><span id="storage-note">배정 현황은 이 브라우저에 저장됩니다.</span><button class="text-button" id="reset-event" type="button" disabled>전체 배정 초기화</button></div>
+        </details>
       </section>
 
       <section class="screen draw-screen" id="draw-screen" aria-labelledby="draw-heading" hidden>
@@ -80,7 +90,7 @@
           <div class="machine-orbit orbit-one" aria-hidden="true"></div><div class="machine-orbit orbit-two" aria-hidden="true"></div>
           <div class="machine-topline"><span>DESTINATION SELECTOR</span><span><i></i> LIVE DRAW</span></div>
           <div class="roulette-stage" id="roulette-stage">
-            <div class="roulette-cylinder" id="roulette-cylinder" role="img" aria-label="8개 놀이기구가 회전하는 원통형 룰렛"></div>
+            <div class="roulette-cylinder" id="roulette-cylinder" role="img" aria-label="4개 팀의 놀이기구가 회전하는 원통형 룰렛"></div>
             <span class="cylinder-cap cylinder-cap-left" aria-hidden="true"></span><span class="cylinder-cap cylinder-cap-right" aria-hidden="true"></span>
             <span class="selection-window" aria-hidden="true"></span><span class="reel-shade" aria-hidden="true"></span>
           </div>
@@ -106,13 +116,15 @@
           <h1 id="reveal-heading" tabindex="-1"></h1>
           <p class="reveal-description" id="reveal-description"></p>
           <div class="reveal-pass" aria-hidden="true"><svg class="reveal-pass-icon" id="reveal-pass-icon"><use></use></svg><div><span>YOUR NEXT STOP</span><strong id="reveal-pass-name"></strong><small>01 / ATTRACTION CONFIRMED</small></div><span class="pass-check">✓</span></div>
-          <div class="reveal-actions"><button class="primary-button" id="keep-button" type="button" disabled>티켓에 담기<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button><button class="text-button" id="redraw-button" type="button" disabled>한 번 더 뽑기 <span aria-hidden="true">↻</span></button></div>
+          <div class="reveal-actions"><button class="primary-button" id="keep-button" type="button" disabled>티켓 주인 뽑기<svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button><button class="text-button" id="redraw-button" type="button" disabled>한 번 더 뽑기 <span aria-hidden="true">↻</span></button></div>
         </div>
         <span class="reveal-index" id="reveal-index" aria-hidden="true" hidden></span>
       </section>
+      <section class="screen owner-screen" id="owner-screen" aria-labelledby="owner-heading" hidden></section>
     </main>
 
-    <footer class="app-footer"><span id="footer-caption">YOUR TICKET TO THE UNEXPECTED</span><div class="journey-steps" aria-label="티켓 진행 상황"><span class="step active" id="ride-step"><i>01</i>놀이기구</span><span class="step-connector" aria-hidden="true"></span><span class="step"><i>02</i>미션</span></div><span class="footer-number">EVERLAND / 2026</span></footer>
+    <footer class="app-footer"><span id="footer-caption">YOUR TICKET TO THE UNEXPECTED</span><div class="journey-steps" aria-label="티켓 진행 상황"><span class="step active" id="ride-step"><i>01</i>놀이기구</span><span class="step-connector" aria-hidden="true"></span><span class="step" id="owner-step"><i>02</i>티켓 주인</span><span class="step-connector" aria-hidden="true"></span><span class="step"><i>03</i>미션</span></div><span class="footer-number">EVERLAND / 2026</span></footer>
+    <dialog class="reset-dialog" id="reset-dialog" aria-labelledby="reset-heading"><h2 id="reset-heading">전체 배정을 초기화할까요?</h2><p>이 브라우저에 저장된 티켓과 팀 배정이 지워지고,<br>16명 모두 다시 추첨할 수 있게 됩니다.</p><div><button class="primary-button" id="cancel-reset" type="button" autofocus>돌아가기</button><button class="text-button" id="confirm-reset" type="button">전체 배정 초기화</button></div></dialog>
     <button class="skip-button" id="skip-button" type="button" hidden>연출 건너뛰기 <span aria-hidden="true">↗</span></button>
     <div class="opening-overlay" id="opening-overlay" aria-hidden="true"><div class="opening-spark">✦</div><span>당신의 모험을 준비하는 중</span><div class="opening-line"></div></div>
     <p class="sr-only" id="live-status" role="status" aria-live="polite"></p>

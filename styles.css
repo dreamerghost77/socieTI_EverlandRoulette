@@ -328,3 +328,49 @@ body:has(.reveal-screen:not([hidden]):not(.is-revealed)) .app-header, body:has(.
   .reveal-flare { animation: none !important; opacity: .35; }
   .charge-track span { transform: scaleX(1); }
 }
+
+/* A ticket is complete only after its attraction and owner have been drawn. */
+.owner-slot strong { color: #315b3f; font-family: monospace; letter-spacing: .1em; }
+.stub-owner { margin: 9px 0 2px; font-family: monospace; font-size: 21px; font-weight: 850; letter-spacing: .04em; }
+.stub-owner + .stub-spark { width: 23px; height: 23px; margin: 9px 0; }
+.team-full { opacity: .38; }
+.assignment-details { grid-column: 1 / -1; width: 100%; margin-top: 34px; border-top: 1px solid var(--line); }
+.assignment-details > summary { display: flex; align-items: center; gap: 24px; min-height: 52px; padding: 10px 0; color: #9eb39f; cursor: pointer; font-size: 11px; list-style: none; }
+.assignment-details > summary::-webkit-details-marker { display: none; }
+.assignment-details > summary > span:first-child { margin-right: auto; }
+#assignment-count { color: #b8d4ad; font-family: monospace; font-size: 11px; }
+.assignment-expand { color: var(--mint); font-size: 19px; transition: transform .2s; }
+.assignment-details[open] .assignment-expand { transform: rotate(45deg); }
+.assignment-teams { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding: 8px 0 24px; }
+.assignment-team { min-width: 0; padding: 18px; border: 1px solid rgba(196,248,154,.13); border-radius: 4px; background: rgba(196,248,154,.025); }
+.assignment-team-heading { display: flex; align-items: center; gap: 8px; }
+.assignment-team-heading svg { flex: 0 0 auto; width: 27px; height: 27px; color: #a1c38f; }
+.assignment-team-heading h3 { margin: 0; color: #c7d9bf; font-size: 11px; font-weight: 650; word-break: keep-all; }
+.assignment-team-heading > span { margin-left: auto; color: #7f9f72; font-family: monospace; font-size: 9px; white-space: nowrap; }
+.assignment-team ol { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 17px 0 0; padding: 0; list-style: none; }
+.assignment-team li { padding: 9px 7px; border: 1px solid rgba(196,248,154,.22); border-radius: 2px; color: var(--mint); background: rgba(196,248,154,.07); font-family: monospace; font-size: 15px; font-weight: 700; text-align: center; }
+.assignment-team li.empty-seat { border: 1px dashed rgba(196,248,154,.1); color: #465e4b; background: transparent; font-family: inherit; font-size: 10px; font-weight: 400; }
+.waiting-participants > p { margin: 0 0 13px; color: #728d79; font-size: 10px; }
+#waiting-list { display: flex; flex-wrap: wrap; gap: 9px; }
+#waiting-list > span { padding: 6px 9px; border: 1px solid var(--line); border-radius: 2px; color: #a4b79f; font-family: monospace; font-size: 11px; }
+.assignment-controls { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); }
+#storage-note { color: #5e7966; font-size: 9px; }
+#reset-event { color: #8e9d8a; font-size: 9px; }
+#reset-event:hover:not(:disabled) { color: #d7c2a6; }
+#reset-event:disabled { color: #425349; cursor: default; }
+.reset-dialog { width: min(450px, 90vw); padding: 32px; border: 1px solid rgba(196,248,154,.3); border-radius: 8px; color: var(--white); background: #101a15; box-shadow: 0 25px 100px #000; }
+.reset-dialog::backdrop { background: rgba(0,0,0,.8); }
+.reset-dialog h2 { margin: 0 0 17px; font-size: 22px; letter-spacing: -.05em; }
+.reset-dialog p { margin: 0; color: #8ca48d; font-size: 12px; line-height: 1.9; word-break: keep-all; }
+.reset-dialog > div { display: flex; align-items: center; gap: 25px; margin-top: 27px; }
+.reset-dialog .primary-button { min-height: 43px; padding: 0 20px; font-size: 12px; }
+body[data-stage="owner"] .app-header, body[data-stage="owner"] .app-footer { border-color: transparent; }
+@media (max-width: 760px) {
+  .assignment-teams { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .assignment-team { padding: 12px; }
+  .assignment-team-heading h3 { font-size: 9px; }
+  .assignment-team-heading svg { width: 21px; height: 21px; }
+  .assignment-team-heading > span { font-size: 7px; }
+  .assignment-controls { flex-wrap: wrap; }
+  .stub-owner { font-size: 17px; }
+}

@@ -1,0 +1,126 @@
+/* Two independently rotating name reels and the final surname card choice. */
+.owner-screen { --owner-face-height: 88px; --owner-radius: 362px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100svh - 179px); padding: 32px 0; }
+.owner-screen::before { position: absolute; z-index: -1; inset: 4% 3%; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(179,224,145,.055), transparent 68%); content: ""; pointer-events: none; }
+.owner-intro { position: relative; z-index: 2; text-align: center; }
+.owner-intro .eyebrow { justify-content: center; margin-bottom: 17px; font-size: 8px; }
+.owner-intro h1 { margin: 0; font-size: clamp(30px, 3.3vw, 44px); font-weight: 750; letter-spacing: -.06em; line-height: 1.3; }
+.owner-description { margin: 13px 0 0; color: #849c8c; font-size: 12px; line-height: 1.8; }
+.owner-destination { display: inline-flex; align-items: center; gap: 9px; min-height: 34px; margin-top: 20px; padding: 0 13px; border: 1px solid rgba(166,204,153,.2); border-radius: 30px; color: #c0d4ba; background: rgba(113,156,93,.04); font-size: 11px; font-weight: 600; }
+.owner-destination svg { width: 20px; height: 20px; color: var(--mint); }
+.owner-destination-label { margin-left: 6px; color: #668568; font-family: monospace; font-size: 7px; letter-spacing: .08em; }
+.owner-layout { position: relative; display: grid; grid-template-columns: 1fr; align-items: center; justify-content: center; width: min(960px, 100%); margin-top: 38px; }
+.owner-reels-area { width: min(470px, 100%); margin: 0 auto; transition: opacity .6s, transform .6s; }
+.owner-machine-meta { display: flex; justify-content: space-between; padding: 0 9px; color: #678369; font-family: monospace; font-size: 8px; letter-spacing: .12em; }
+.owner-reels { position: relative; display: flex; align-items: center; justify-content: center; gap: 25px; margin: 16px 0 19px; }
+.owner-reel-window { position: relative; width: 190px; height: 236px; overflow: clip; border-left: 1px solid #3b583d; border-right: 1px solid #3b583d; border-radius: 30px / 50%; background: #0b1510; perspective: 1600px; perspective-origin: center; }
+.owner-letter-reel { position: absolute; top: 50%; left: 0; width: 100%; height: var(--owner-face-height); transform-style: preserve-3d; will-change: transform; }
+.owner-letter-face { position: absolute; top: 50%; left: 0; display: grid; width: 100%; height: var(--owner-face-height); place-items: center; border-top: 1px solid rgba(174,210,158,.2); border-bottom: 1px solid rgba(174,210,158,.1); color: #ecf4e7; background: linear-gradient(90deg, #152019, #1b2a1e 25%, #202e21 50%, #1b2a1e 75%, #152019); font-family: "Arial", sans-serif; font-size: 84px; font-weight: 700; letter-spacing: -.06em; line-height: 1; backface-visibility: hidden; user-select: none; transform: translateY(-50%) rotateX(var(--letter-angle)) translateZ(var(--owner-radius)); }
+.owner-reel-selection { position: absolute; z-index: 4; top: 50%; left: 0; right: 0; height: var(--owner-face-height); border-top: 1px solid rgba(196,248,154,.65); border-bottom: 1px solid rgba(196,248,154,.65); box-shadow: inset 0 0 22px rgba(196,248,154,.025); transform: translateY(-50%); pointer-events: none; transition: border-color .3s, box-shadow .3s; }
+.owner-reel-selection::before, .owner-reel-selection::after { position: absolute; top: 50%; width: 5px; height: 5px; border-top: 1px solid var(--mint); border-right: 1px solid var(--mint); content: ""; }
+.owner-reel-selection::before { left: 7px; transform: translateY(-50%) rotate(45deg); }
+.owner-reel-selection::after { right: 7px; transform: translateY(-50%) rotate(-135deg); }
+.owner-reel-shade { position: absolute; z-index: 5; inset: -1px; background: linear-gradient(180deg, #090e10 0%, rgba(9,14,16,.82) 10%, rgba(9,14,16,.18) 31%, transparent 40%, transparent 60%, rgba(9,14,16,.18) 69%, rgba(9,14,16,.82) 90%, #090e10 100%); pointer-events: none; }
+.owner-reel-join { flex: 0 0 auto; color: #557049; font-size: 15px; }
+.owner-reel-window[data-locked="true"] .owner-reel-selection { border-color: var(--mint); box-shadow: inset 0 0 23px rgba(196,248,154,.08), 0 0 25px rgba(196,248,154,.12); }
+.owner-reel-window[data-locked="true"] .owner-letter-face { color: var(--mint); }
+.owner-machine-bottom { font-size: 7px; letter-spacing: .08em; }
+.owner-initials-line { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 32px; margin-top: 18px; color: #6f9174; font-size: 9px; }
+.owner-initials-line strong { color: #c5d9bc; font-family: monospace; font-size: 18px; font-weight: 500; letter-spacing: .15em; }
+.owner-initials-check { margin-left: 2px; color: var(--mint); font-size: 15px; }
+.owner-bottom-note { display: flex; align-items: center; justify-content: center; gap: 9px; margin: 29px 0 0; color: #718a76; font-size: 10px; }
+.owner-bottom-note span { color: #a6ca95; font-size: 17px; }
+
+.owner-screen[data-owner-phase="cards"] .owner-layout,
+.owner-screen[data-owner-phase="card-reveal"] .owner-layout,
+.owner-screen[data-owner-phase="confirmed"]:has(.owner-choice-area:not([hidden])) .owner-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 70px; }
+.owner-screen[data-owner-phase="cards"] .owner-reels,
+.owner-screen[data-owner-phase="card-reveal"] .owner-reels,
+.owner-screen[data-owner-phase="confirmed"]:has(.owner-choice-area:not([hidden])) .owner-reels { gap: 15px; }
+.owner-screen[data-owner-phase="cards"] .owner-reel-window,
+.owner-screen[data-owner-phase="card-reveal"] .owner-reel-window,
+.owner-screen[data-owner-phase="confirmed"]:has(.owner-choice-area:not([hidden])) .owner-reel-window { width: 166px; height: 214px; }
+.owner-choice-area { min-width: 0; text-align: center; animation: owner-choice-enter .6s ease both; }
+.owner-card-eyebrow { margin: 0 0 11px; color: #6c8b6d; font-size: 7px; font-weight: 600; letter-spacing: .18em; }
+.owner-choice-area h2 { margin: 0; color: #c6d6bf; font-size: 19px; font-weight: 650; letter-spacing: -.045em; }
+.owner-card-description { min-height: 38px; margin: 11px 0 0; color: #77917b; font-size: 10px; line-height: 1.8; }
+.surname-cards { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 22px; }
+.surname-card { position: relative; flex: 0 0 auto; width: 132px; height: 180px; padding: 0; border: 0; border-radius: 8px; color: #cae8b5; background: none; perspective: 900px; transition: opacity .5s, transform .4s; }
+.surname-card:focus-visible { outline-offset: 7px; }
+.surname-card:not(:disabled):hover { transform: translateY(-8px) rotate(-2deg); }
+.surname-card:nth-child(2):not(:disabled):hover { transform: translateY(-8px) rotate(2deg); }
+.surname-card-inner { position: absolute; inset: 0; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.18,.75,.2,1); }
+.surname-card-back, .surname-card-face { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px 12px; overflow: hidden; border: 1px solid #72915d; border-radius: 8px; background: linear-gradient(145deg, #1a2d1d, #101d15 55%, #1b3020); backface-visibility: hidden; }
+.surname-card-back::before { position: absolute; inset: 6px; border: 1px solid rgba(173,212,146,.23); border-radius: 4px; content: ""; }
+.surname-card-back::after { position: absolute; inset: 24px -35px; border-top: 1px solid rgba(173,212,146,.12); border-bottom: 1px solid rgba(173,212,146,.12); content: ""; transform: rotate(-35deg); }
+.surname-card-number { position: absolute; top: 15px; left: 16px; color: #78956b; font-family: monospace; font-size: 7px; }
+.surname-card-star { position: relative; z-index: 1; margin-top: 3px; color: #c4f89a; font-size: 36px; text-shadow: 0 0 23px rgba(196,248,154,.16); }
+.surname-card-caption { position: relative; z-index: 1; margin-top: 13px; color: #a7c493; font-size: 8px; font-weight: 650; letter-spacing: .14em; line-height: 1.7; }
+.surname-card-mini { position: absolute; bottom: 17px; color: #5e7d56; font-family: monospace; font-size: 4px; letter-spacing: .04em; }
+.surname-card-face { border-color: #c4f89a; color: #1b3420; background: linear-gradient(145deg, #d5efb8, #b7e893); transform: rotateY(180deg); }
+.surname-face-label { color: #658552; font-family: monospace; font-size: 7px; letter-spacing: .17em; }
+.surname-card-face strong { margin: 13px 0 16px; color: #284629; font-family: Arial, sans-serif; font-size: 74px; font-weight: 600; line-height: 1; }
+.surname-face-footer { color: #64824d; font-size: 5px; font-weight: 700; letter-spacing: .05em; }
+.surname-card.is-selected .surname-card-inner { transform: rotateY(180deg); }
+.surname-card.is-selected { filter: drop-shadow(0 0 20px rgba(184,235,148,.13)); }
+.surname-card.is-unselected { opacity: .28; transform: translateY(6px) scale(.96); }
+.owner-confirmation { position: relative; z-index: 6; margin-top: 19px; text-align: center; animation: owner-result-enter .6s ease both; }
+.owner-confirmed-eyebrow { display: block; color: #81a176; font-size: 7px; letter-spacing: .18em; }
+.owner-confirmation h2 { margin: 9px 0 0; color: var(--mint); font-family: Arial, sans-serif; font-size: 61px; font-weight: 600; letter-spacing: .07em; line-height: 1.1; text-shadow: 0 0 34px rgba(196,248,154,.1); }
+.owner-confirmation h2:focus { outline: none; }
+.owner-confirmation > p { margin: 10px 0 0; color: #85a17d; font-size: 10px; }
+.owner-screen[data-owner-phase="confirmed"] .owner-reels-area { opacity: .46; transform: scale(.96); }
+.owner-screen[data-owner-phase="confirmed"] .owner-layout { margin-top: 23px; }
+.owner-screen[data-owner-phase="confirmed"] .owner-intro .owner-destination { margin-top: 13px; }
+.owner-screen[data-owner-phase="confirmed"] .owner-reel-window { height: 180px; }
+.owner-screen[data-owner-phase="confirmed"] .owner-initials-line { margin-top: 8px; }
+.owner-screen[data-owner-phase="confirmed"] .owner-choice-area .surname-cards { margin-top: 15px; }
+.owner-screen[data-owner-phase="confirmed"] .owner-choice-area .surname-card { height: 160px; }
+
+@keyframes owner-choice-enter { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes owner-result-enter { from { opacity: 0; transform: translateY(12px) scale(.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-height: 760px) and (min-width: 761px) {
+  .owner-screen { min-height: calc(100svh - 140px); padding: 22px 0; }
+  .owner-intro h1 { font-size: 33px; }
+  .owner-intro .eyebrow { margin-bottom: 12px; }
+  .owner-description { margin-top: 9px; font-size: 11px; }
+  .owner-destination { margin-top: 13px; min-height: 30px; }
+  .owner-layout { margin-top: 24px; }
+  .owner-reel-window { height: 210px; }
+  .owner-bottom-note { margin-top: 22px; }
+  .owner-confirmation h2 { font-size: 45px; }
+  .owner-screen[data-owner-phase="confirmed"] .owner-reel-window { height: 145px; }
+  .owner-screen[data-owner-phase="confirmed"]:has(.owner-choice-area:not([hidden])) .owner-layout { margin-top: 18px; }
+  .owner-screen[data-owner-phase="confirmed"] .owner-choice-area .surname-card { height: 145px; }
+}
+@media (max-width: 760px) {
+  .owner-screen { min-height: calc(100svh - 155px); padding: 38px 0; }
+  .owner-intro .eyebrow { font-size: 6px; letter-spacing: .1em; }
+  .owner-intro h1 { font-size: 29px; }
+  .owner-description { max-width: 310px; margin: 12px auto 0; font-size: 10px; }
+  .owner-destination { font-size: 10px; }
+  .owner-destination-label { display: none; }
+  .owner-layout { margin-top: 30px; }
+  .owner-reels { gap: 12px; }
+  .owner-reel-window { width: min(36vw, 165px); height: 210px; border-radius: 22px / 50%; }
+  .owner-letter-face { font-size: 76px; }
+  .owner-reel-join { font-size: 11px; }
+  .owner-machine-meta { font-size: 6px; }
+  .owner-bottom-note { font-size: 8px; }
+  .owner-screen[data-owner-phase="cards"] .owner-layout,
+  .owner-screen[data-owner-phase="card-reveal"] .owner-layout,
+  .owner-screen[data-owner-phase="confirmed"]:has(.owner-choice-area:not([hidden])) .owner-layout { grid-template-columns: 1fr; gap: 27px; }
+  .owner-screen[data-owner-phase="cards"] .owner-reel-window,
+  .owner-screen[data-owner-phase="card-reveal"] .owner-reel-window,
+  .owner-screen[data-owner-phase="confirmed"]:has(.owner-choice-area:not([hidden])) .owner-reel-window { width: min(32vw, 145px); height: 156px; }
+  .owner-screen[data-owner-phase="cards"] .owner-intro .owner-description,
+  .owner-screen[data-owner-phase="card-reveal"] .owner-intro .owner-description { display: none; }
+  .owner-card-description { font-size: 9px; }
+  .surname-cards { margin-top: 17px; }
+  .surname-card { width: 115px; height: 157px; }
+  .surname-card-face strong { font-size: 62px; }
+  .owner-choice-area h2 { font-size: 17px; }
+  .owner-confirmation h2 { font-size: 48px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .owner-screen *, .owner-screen *::before, .owner-screen *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+}
