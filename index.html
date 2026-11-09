@@ -137,15 +137,15 @@
         <div class="ladder-top-players" id="ladder-top-players" aria-label="참가자 출발점"></div>
         <div class="ladder-svg-wrap" id="ladder-svg-wrap"><svg id="ladder-svg" viewBox="0 0 1000 500" preserveAspectRatio="none" role="img" aria-label="다섯 참가자와 다섯 미션을 잇는 사다리"></svg><div class="ladder-flare" id="ladder-flare" aria-hidden="true"></div></div>
         <div class="ladder-bottom-missions" id="ladder-bottom-missions" aria-label="미션 도착점"></div>
-        <div class="ladder-leader-callout" id="ladder-leader-callout" hidden></div>
         <div class="ladder-result-list" id="ladder-result-list"></div>
         <div class="flow-actions"><button class="primary-button" id="ladder-next-button" type="button" hidden>팀 티켓 완성 <svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button></div>
       </section>
 
       <section class="screen final-screen" id="final-screen" aria-labelledby="final-heading" hidden>
-        <div class="flow-heading"><p class="eyebrow">EVERLAND MT / TICKETS COMPLETE</p><h1 id="final-heading" tabindex="-1">세 팀의 모험이 완성됐어요.</h1><p>팀별 티켓을 저장하거나 전체 결과를 ZIP 파일로 내려받으세요.</p></div>
+        <div class="flow-heading"><p class="eyebrow">EVERLAND MT / BLIND DRAW COMPLETE</p><h1 id="final-heading" tabindex="-1">세 팀의 모험이 완성됐어요.</h1><p>공개 화면에는 미션 내용과 팀장 정보가 표시되지 않습니다. 티켓 출력은 별도 운영자 화면에서 진행하세요.</p></div>
         <div class="final-ticket-grid" id="final-ticket-grid"></div>
-        <div class="flow-actions final-actions"><button class="primary-button" id="download-all-button" type="button">전체 티켓 ZIP 저장 <svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button><button class="text-button" id="reset-final" type="button">전체 추첨 초기화</button></div>
+        <div class="flow-actions final-actions"><button class="primary-button" id="export-operator-data-button" type="button">운영자 기기로 전달할 티켓 데이터 저장 <svg aria-hidden="true"><use href="#icon-arrow"></use></svg></button><button class="text-button" id="reset-final" type="button">전체 추첨 초기화</button></div>
+        <p class="operator-export-note">내려받은 JSON 파일에는 실제 미션과 팀장 정보가 포함됩니다. 운영자에게만 전달하세요.</p>
       </section>
     </main>
 

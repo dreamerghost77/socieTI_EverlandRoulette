@@ -518,6 +518,16 @@ body[data-stage="owner"] .app-header, body[data-stage="owner"] .app-footer { bor
 .final-ticket > footer { margin-top: 10px; padding-top: 9px; border-top: 1px dashed rgba(33,67,41,.3); color: #47704a; font: 800 8px monospace; text-align: center; }
 .download-ticket-button { display: block; margin: 10px auto 0; color: #55715a; font-size: 10px; }
 .final-actions { margin-top: 24px; }
+.final-summary { min-width: 0; padding: 17px; border: 1px solid rgba(196,248,154,.22); border-radius: 7px; color: #1c3223; background: #f5f8f2; box-shadow: 0 14px 35px rgba(0,0,0,.18); }
+.final-summary > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 12px; border-bottom: 1px dashed rgba(33,67,41,.28); }
+.final-summary > header strong { color: #29452f; font-size: 15px; }
+.final-summary > header span { color: #4a6c51; font-size: 13px; font-weight: 800; }
+.final-summary-assignments { display: grid; gap: 7px; margin: 13px 0; padding: 0; list-style: none; }
+.final-summary-assignments li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid rgba(70,108,60,.15); border-radius: 4px; background: #fff; }
+.final-summary-assignments strong { color: #27442e; font: 850 12px monospace; }
+.final-summary-assignments span { color: #0c8587; font: 800 10px monospace; letter-spacing: .05em; }
+.final-summary > p { margin: 12px 0 0; color: #66796a; font-size: 10px; line-height: 1.55; text-align: center; }
+.operator-export-note { width: min(700px, 94vw); margin: 13px auto 0; color: #9ba99a; font-size: 10px; line-height: 1.55; text-align: center; }
 body[data-stage="missions"] .app-header, body[data-stage="ladder"] .app-header, body[data-stage="final"] .app-header { border-color: transparent; }
 body[data-stage="missions"] .app-footer, body[data-stage="ladder"] .app-footer, body[data-stage="final"] .app-footer { border-color: rgba(220,242,226,.08); }
 

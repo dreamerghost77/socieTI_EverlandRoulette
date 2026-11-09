@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10211a">
+    <title>운영자 티켓 출력 — EVERLAND MT</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23fff'/%3E%3Ctext x='17' y='48' font-family='Georgia,serif' font-style='italic' font-size='53' fill='%230caaa9'%3Ee%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="operator.css">
+    <script src="participants.js" defer></script>
+    <script src="event-data.js" defer></script>
+    <script src="ladder.js" defer></script>
+    <script src="raffle-state.js" defer></script>
+    <script src="operator.js" defer></script>
+  </head>
+  <body>
+    <header class="operator-header">
+      <div><span class="eyebrow">PRIVATE PRINT DESK</span><h1>EVERLAND MT 티켓 출력</h1><p>개인 티켓 15장 · 미션 및 팀장 정보 포함</p></div>
+      <div class="operator-status" id="operator-status" role="status" aria-live="polite">운영자 확인 후 티켓 데이터를 불러옵니다.</div>
+    </header>
+
+    <main class="operator-main">
+      <section class="operator-import" id="operator-import">
+        <div><h2>추첨 결과 불러오기</h2><p>같은 브라우저의 저장된 결과를 자동으로 확인합니다. 다른 기기라면 공개 화면에서 받은 운영자 JSON 파일을 가져오세요.</p></div>
+        <label class="file-picker">운영자 JSON 선택<input id="operator-file" type="file" accept="application/json,.json"></label>
+      </section>
+      <section class="operator-actions" id="operator-actions" hidden>
+        <div><strong id="ticket-count">개인 티켓 15장</strong><span>한 장에 한 사람의 미션만 표시됩니다.</span></div>
+        <div class="action-buttons"><button class="button button-primary" id="print-all" type="button">전체 15장 인쇄</button><button class="button" id="download-all" type="button">PNG 15장 ZIP 저장</button></div>
+      </section>
+      <div class="ticket-pages" id="ticket-pages" aria-live="polite"></div>
+    </main>
+
+    <dialog class="operator-warning" id="operator-warning" aria-labelledby="warning-title">
+      <span class="eyebrow">OPERATOR ONLY</span>
+      <h2 id="warning-title">비공개 티켓 출력 화면입니다</h2>
+      <p>이 화면에는 참가자별 실제 미션과 팀장 여부가 표시됩니다. 프로젝터에 공유하지 말고 운영자 기기에서만 사용하세요.</p>
+      <div><button class="button" id="leave-operator" type="button">취소</button><button class="button button-primary" id="confirm-operator" type="button">운영자 화면 열기</button></div>
+    </dialog>
+    <p class="operator-live" id="operator-live" role="status" aria-live="polite"></p>
+  </body>
+</html>

@@ -1,0 +1,72 @@
+:root {
+  color-scheme: light;
+  font-family: "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+  color: #1c3124;
+  background: #f0f4f1;
+}
+
+* { box-sizing: border-box; }
+body { min-width: 320px; margin: 0; background: #f0f4f1; }
+.operator-header { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding: 28px max(24px, calc((100vw - 1320px) / 2)); color: #f5faf6; background: #10211a; }
+.operator-header h1 { margin: 5px 0 0; font-size: clamp(24px, 3vw, 38px); letter-spacing: -.04em; }
+.operator-header p { margin: 6px 0 0; color: #b7c8bc; font-size: 14px; }
+.eyebrow { color: #00a8ad; font: 800 11px/1.4 Arial, sans-serif; letter-spacing: .18em; }
+.operator-status { max-width: 470px; color: #d3e1d7; font-size: 13px; line-height: 1.6; text-align: right; }
+.operator-main { width: min(1320px, calc(100% - 40px)); margin: 26px auto 60px; }
+.operator-import, .operator-actions { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 22px; padding: 18px 20px; border: 1px solid #d3dfd7; border-radius: 12px; background: #fff; }
+.operator-import h2 { margin: 0; font-size: 17px; }
+.operator-import p { max-width: 770px; margin: 5px 0 0; color: #63756a; font-size: 13px; line-height: 1.6; }
+.file-picker, .button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 16px; border: 1px solid #bfd0c4; border-radius: 8px; color: #213a2a; background: #fff; font: 750 13px "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif; cursor: pointer; text-decoration: none; }
+.file-picker { position: relative; flex: 0 0 auto; }
+.file-picker input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.button:hover, .file-picker:hover { border-color: #00a8ad; background: #f2fbf8; }
+.button-primary { border-color: #088f91; color: #fff; background: #078f91; }
+.button-primary:hover { border-color: #056e70; color: #fff; background: #056e70; }
+.button:disabled { opacity: .55; cursor: wait; }
+.operator-actions > div:first-child { display: grid; gap: 5px; }
+.operator-actions > div:first-child strong { font-size: 17px; }
+.operator-actions > div:first-child span { color: #63756a; font-size: 12px; }
+.action-buttons { display: flex; gap: 9px; }
+.ticket-pages { display: grid; gap: 28px; }
+.ticket-print-page { padding: 18px; border: 1px solid #d5e0d8; border-radius: 12px; background: #e5ece7; }
+.print-page-label { margin: 0 0 12px; color: #63756a; font: 800 11px Arial, sans-serif; letter-spacing: .14em; }
+.ticket-print-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ticket-card { min-width: 0; overflow: hidden; border: 1px solid #d7e0da; border-radius: 9px; background: #fff; box-shadow: 0 8px 20px rgba(22, 49, 34, .08); }
+.ticket-image { display: block; width: 100%; height: auto; background: #fff; }
+.ticket-card-actions { display: flex; justify-content: end; gap: 8px; padding: 9px 11px; border-top: 1px solid #e3e9e5; background: #fff; }
+.ticket-card-actions .button { min-height: 34px; padding: 0 11px; font-size: 12px; }
+.operator-warning { width: min(470px, calc(100vw - 32px)); padding: 28px; border: 1px solid #d2ded6; border-radius: 16px; color: #1c3124; box-shadow: 0 22px 80px rgba(0,0,0,.3); }
+.operator-warning::backdrop { background: rgba(9, 18, 13, .76); }
+.operator-warning h2 { margin: 8px 0 10px; font-size: 23px; }
+.operator-warning p { color: #53665a; font-size: 14px; line-height: 1.7; }
+.operator-warning > div { display: flex; justify-content: end; gap: 8px; margin-top: 22px; }
+.operator-live { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+@page { size: A4 landscape; margin: 7mm; }
+@page single-ticket { size: A6 landscape; margin: 3mm; }
+@page bulk-tickets { size: A4 landscape; margin: 7mm; }
+
+@media print {
+  html, body { width: auto; min-width: 0; min-height: 0; margin: 0; color: #111; background: #fff !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .operator-header, .operator-import, .operator-actions, .ticket-card-actions, .print-page-label, .operator-warning, .operator-live { display: none !important; }
+  .operator-main, .ticket-pages { display: block; width: auto; margin: 0; padding: 0; }
+  .ticket-print-page { display: block; width: 283mm; height: 196mm; margin: 0; padding: 0; overflow: hidden; border: 0; border-radius: 0; background: #fff; break-after: page; page-break-after: always; page: bulk-tickets; }
+  .ticket-print-page:last-child { break-after: auto; page-break-after: auto; }
+  .ticket-print-grid { display: grid; width: 283mm; height: 196mm; grid-template-columns: 138.5mm 138.5mm; grid-template-rows: 96mm 96mm; gap: 4mm; align-content: center; justify-content: center; }
+  .ticket-card { width: 138.5mm; height: 96mm; overflow: hidden; border: 0; border-radius: 0; background: #fff; box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
+  .ticket-image { width: 100%; height: 100%; object-fit: contain; }
+  body.print-single .ticket-print-page { display: none; }
+  body.print-single .ticket-print-page.is-print-selected-page { display: block; width: 142mm; height: 99mm; page: single-ticket; break-after: auto; page-break-after: auto; }
+  body.print-single .ticket-print-grid { display: block; width: 142mm; height: 99mm; }
+  body.print-single .ticket-card { display: none; }
+  body.print-single .ticket-card.is-print-selected { display: block; width: 142mm; height: 99mm; }
+}
+
+@media (max-width: 720px) {
+  .operator-header, .operator-import, .operator-actions { align-items: start; flex-direction: column; }
+  .operator-status { text-align: left; }
+  .operator-main { width: calc(100% - 24px); margin-top: 12px; }
+  .action-buttons { flex-wrap: wrap; }
+  .ticket-print-grid { grid-template-columns: 1fr; }
+  .ticket-print-page { padding: 10px; }
+}

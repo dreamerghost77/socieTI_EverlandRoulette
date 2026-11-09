@@ -23,6 +23,10 @@ function fillRandomTeam(model, teamId) {
   }
 }
 
+function storedTeam(model, teamId) {
+  return model.state.teams.find((team) => team.id === teamId);
+}
+
 test('event roster has 15 valid participants and reserves the fixed medium team', () => {
   assert.equal(participants.length, 15);
   assert.equal(participants.some((person) => person.id === 'JW'), false);
@@ -30,6 +34,35 @@ test('event roster has 15 valid participants and reserves the fixed medium team'
   const model = new RaffleState({ storage: new MemoryStorage(), randomIndex: stableRandom });
   assert.equal(model.getAvailableParticipants().length, 10);
   assert.equal(model.getAvailableParticipants().some((person) => teams[2].members.includes(person.id)), false);
+});
+
+test('mission pools exactly match the requested four specials and eighteen general missions', () => {
+  assert.deepEqual(Object.fromEntries(Object.entries(specialMissions).map(([theme, mission]) => [theme, mission.text])), {
+    timber: '공식 사진 구간에서 양손 브이 포즈로 사진찍히기',
+    thunder: '탑승 이후 제일 물 많이 맞은 사람으로 지목되기',
+    river: '탑승 이후 제일 물 많이 맞은 사람으로 지목되기',
+    storm: '탑승 전 1~100 사이 숫자 5개 뽑기 이후 탑승 이후 기억력테스트 성공하기',
+  });
+  assert.deepEqual(generalMissions.map((mission) => mission.text), [
+    '본인 포함 팀원 3명 이상 츄러스 사먹기',
+    '직원의 동의를 구한 뒤 셀카 찍기',
+    '릴스 형식의 에버랜드 홍보 영상 찍기',
+    '모르는 사람에게 사회공헌단 명함 건네고 응원받기',
+    '에버랜드에서 빨주노초파남보 색깔 7가지 찾아오기',
+    '본인이 중앙을 차지한 단체사진 3개 이상 찍기',
+    '사회공헌 활동 이후 인증(예: 쓰레기 주워 분리수거)',
+    '본인이 낙오된 단체사진 한 장 이상 찍기',
+    '모두가 정면을 바라보지 않는 단체사진 1장 이상 찍기',
+    '본인 제외 다른 팀원들의 단독사진 1장씩 찍어오기',
+    '틈내서 김홍종 미적분학 연습문제 3개 풀기',
+    '다른 팀 만나서 사진찍기',
+    '다른 단원 한 명을 지목해 1분 동안 공주님·왕자님처럼 모시기',
+    '에버랜드 머리띠 쓰고 2시간 이상 돌아다니기',
+    '에버랜드에서 공주님·왕자님 콘셉트로 인생샷 찍기',
+    '팀원들이 정해준 별명으로 1시간 동안 불리기',
+    '에버랜드에서 혼자 패션 화보 3장 찍기',
+    '다른 단원 한 명과 연애 프로그램 첫 만남 장면 연기하기',
+  ]);
 });
 
 test('the three teams draw the required rides without repeating a difficulty ride', () => {
@@ -76,6 +109,40 @@ test('pending participant draw resumes and legacy JW assignments are discarded',
   assert.equal(resumed.getAvailableParticipants().some((person) => person.id === 'JW'), false);
 });
 
+test('v2 state keeps rides and participants but resets old mission and ladder results', () => {
+  const storage = new MemoryStorage({
+    'everland-mt-draw-v2': JSON.stringify({
+      version: 2,
+      activeTeamIndex: 1,
+      teams: [
+        { id: 'high-1', rideTheme: 'timber', members: ['KMK', 'MJ', 'MH', 'SB', 'PMK'], missionIds: ['special-timber', 'general-churros', 'general-staff-selfie', 'general-reels', 'general-card'], ladder: { columns: 5, rows: [[0]] }, matches: [], complete: false },
+        { id: 'high-2', rideTheme: null, members: [], pendingGroup: null },
+        { id: 'medium-1', rideTheme: null, members: ['BJ', 'MYJ', 'JT', 'KW', 'CYJ'] },
+      ],
+    }),
+  });
+  const model = new RaffleState({ storage });
+  const team = model.getTeam('high-1');
+  assert.equal(model.migratedLegacyState, true);
+  assert.equal(team.ride.theme, 'timber');
+  assert.deepEqual(team.members, ['KMK', 'MJ', 'MH', 'SB', 'PMK']);
+  assert.equal(team.missionCount, 0);
+  assert.equal(team.ladder, null);
+  assert.equal(team.phase, 'missions');
+  assert.equal(JSON.parse(storage.getItem(storageKey)).version, 3);
+});
+
+test('the special mission moves to a shuffled slot instead of always occupying the first slot', () => {
+  const specialPositionFor = (randomIndex) => {
+    const model = new RaffleState({ storage: new MemoryStorage(), randomIndex });
+    const ride = model.drawRide('medium-1');
+    model.drawMissions('medium-1');
+    return storedTeam(model, 'medium-1').missionIds.indexOf(specialMissions[ride.theme].id);
+  };
+  assert.equal(specialPositionFor(() => 0), 4);
+  assert.equal(specialPositionFor(stableRandom), 0);
+});
+
 test('ladder rungs do not overlap and the structure maps every input to one unique output', () => {
   let seed = 91231;
   const randomIndex = (length) => { seed = (seed * 48271) % 2147483647; return seed % length; };
@@ -91,18 +158,24 @@ test('ladder rungs do not overlap and the structure maps every input to one uniq
   }
 });
 
-test('ladder edges determine the special mission winner and stay stable after reload', () => {
+test('ladder edges determine the shuffled special mission winner and stay stable after reload', () => {
   const storage = new MemoryStorage();
   const model = new RaffleState({ storage, randomIndex: stableRandom });
   model.drawRide('high-1');
   fillRandomTeam(model, 'high-1');
   const team = model.getTeam('high-1');
-  const missions = model.drawMissions('high-1');
-  assert.equal(missions.length, 5);
-  assert.equal(missions[0].type, 'special');
-  assert.equal(missions[0].id, specialMissions[team.ride.theme].id);
-  assert.equal(new Set(missions.slice(1).map((mission) => mission.id)).size, 4);
-  assert.ok(generalMissions.length >= 4);
+  assert.equal(model.drawMissions('high-1').count, 5);
+  const missionIds = storedTeam(model, 'high-1').missionIds;
+  const specialIndex = missionIds.indexOf(specialMissions[team.ride.theme].id);
+  assert.ok(specialIndex >= 0 && specialIndex < 5);
+  assert.equal(missionIds.filter((id) => id === specialMissions[team.ride.theme].id).length, 1);
+  assert.equal(missionIds.filter((id) => generalMissions.some((mission) => mission.id === id)).length, 4);
+  assert.equal(new Set(missionIds).size, 5);
+  const publicTeam = model.getTeam('high-1');
+  assert.equal(publicTeam.missionCount, 5);
+  assert.equal('missionIds' in publicTeam, false);
+  assert.equal('missions' in publicTeam, false);
+  assert.equal('leader' in publicTeam, false);
   const ladder = model.createLadder('high-1');
   const expected = getPermutation(ladder);
   assert.throws(() => model.advanceTeam());
@@ -111,12 +184,20 @@ test('ladder edges determine the special mission winner and stay stable after re
   assert.equal(complete.complete, true);
   assert.equal(complete.matches.length, 5);
   complete.matches.forEach((match) => assert.equal(match.missionIndex, expected[team.members.indexOf(match.participantId)]));
-  assert.equal(complete.leader, complete.members[expected.indexOf(0)]);
+  const operatorTeam = model.getOperatorTeams().find((entry) => entry.id === 'high-1');
+  const specialWinner = team.members[expected.indexOf(specialIndex)];
+  assert.equal(operatorTeam.leader, specialWinner);
+  assert.equal(operatorTeam.assignments.find((assignment) => assignment.missionType === 'special').participantId, specialWinner);
+  assert.equal(operatorTeam.assignments.filter((assignment) => assignment.isTeamLeader).length, 1);
+  assert.equal('missionId' in complete.matches[0], false);
+  model.markTicketCreated('high-1', specialWinner);
   assert.equal(model.advanceTeam().config.id, 'high-2');
-  const restored = new RaffleState({ storage, randomIndex: stableRandom }).getTeam('high-1');
+  const restoredModel = new RaffleState({ storage, randomIndex: stableRandom });
+  const restored = restoredModel.getTeam('high-1');
   assert.deepEqual(restored.ladder, ladder);
   assert.deepEqual(restored.matches, complete.matches);
-  assert.equal(restored.leader, complete.leader);
+  assert.equal(restoredModel.getOperatorTeams().find((entry) => entry.id === 'high-1').leader, specialWinner);
+  assert.equal(restoredModel.getOperatorTeams().find((entry) => entry.id === 'high-1').assignments.find((assignment) => assignment.participantId === specialWinner).ticketCreated, true);
 });
 
 test('a completed participant cannot be reselected to alter their mission', () => {
@@ -139,6 +220,7 @@ test('fixed medium participants are not drawn again and the medium ride has its 
   assert.equal(team.members.length, 5);
   assert.deepEqual(team.members, teams[2].members);
   model.drawMissions('medium-1');
-  assert.equal(model.getTeam('medium-1').missions[0].id, specialMissions[ride.theme].id);
-  assert.equal(storageKey, 'everland-mt-draw-v2');
+  assert.ok(storedTeam(model, 'medium-1').missionIds.includes(specialMissions[ride.theme].id));
+  assert.equal(model.getTeam('medium-1').missionCount, 5);
+  assert.equal(storageKey, 'everland-mt-draw-v3');
 });

@@ -398,35 +398,35 @@ function showMissionScreen() {
   setStage('missions');
   setAccent(selectedRide);
   renderTeamStrip($('#mission-team-strip'), team);
-  $('#mission-description').textContent = '놀이기구에 연결된 스페셜 미션 1개와 일반 미션 4개를 뽑습니다. 아직 참가자와 연결하지 않아요.';
-  $('#mission-draw-button').hidden = Boolean(team.missions.length);
-  $('#mission-next-button').hidden = !team.missions.length;
+  $('#mission-description').textContent = '참가자에게 공개할 블라인드 미션 5개를 추첨합니다. 실제 내용과 유형은 이 화면에 표시되지 않습니다.';
+  $('#mission-draw-button').hidden = Boolean(team.missionCount);
+  $('#mission-next-button').hidden = !team.missionCount;
   renderMissionCards(team, false);
   $('#footer-caption').textContent = team.config.label.toUpperCase() + ' / MISSION DRAW';
-  status.textContent = team.missions.length ? '확정된 미션을 확인하고 사다리를 생성하세요.' : '스페셜 미션과 일반 미션을 차례로 뽑아보세요.';
+  status.textContent = team.missionCount ? '블라인드 미션 5개가 확정되었습니다.' : '블라인드 미션 5개를 추첨하세요.';
   focusHeading('#mission-heading');
 }
 
 function renderMissionCards(team, animate) {
   const container = $('#mission-card-grid');
   container.replaceChildren();
-  let generalNumber = 0;
-  team.missions.forEach((mission, index) => {
+  const count = team.missionCount || 0;
+  Array.from({ length: count }, (_, index) => index).forEach((index) => {
     const card = document.createElement('article');
-    card.className = 'mission-card ' + (mission.type === 'special' ? 'is-special' : 'is-general') + (animate ? ' is-flipping' : ' is-flipped');
+    card.className = 'mission-card is-sealed' + (animate ? ' is-flipping' : ' is-flipped');
     card.style.setProperty('--flip-delay', (animate ? index * 170 : 0) + 'ms');
     const back = document.createElement('div');
     back.className = 'mission-card-back';
     back.setAttribute('aria-hidden', 'true');
-    back.innerHTML = '<span>✦</span><small>EVERLAND<br>MISSION</small>';
+    back.innerHTML = '<span>?</span><small>SEALED<br>MISSION</small>';
     const face = document.createElement('div');
     face.className = 'mission-card-face';
     const label = document.createElement('span');
     label.className = 'mission-type';
-    if (mission.type === 'general') generalNumber += 1;
-    label.textContent = mission.type === 'special' ? '✦ SPECIAL MISSION' : 'GENERAL MISSION / 0' + generalNumber;
+    label.textContent = 'SECRET MISSION';
     const text = document.createElement('p');
-    text.textContent = mission.text;
+    text.textContent = '•••';
+    card.setAttribute('aria-label', '내용이 봉인된 비밀 미션 카드');
     face.append(label, text);
     card.append(back, face);
     container.append(card);
@@ -442,7 +442,7 @@ function drawMissions() {
   renderMissionCards(updated, !motionQuery.matches);
   $('#mission-draw-button').hidden = true;
   $('#mission-next-button').hidden = false;
-  status.textContent = '스페셜 미션과 일반 미션 네 개를 추첨했어요.';
+  status.textContent = '블라인드 미션 5개가 확정되었습니다.';
   sound.reveal();
 }
 
@@ -543,7 +543,7 @@ function renderLadderPlayers(team) {
     const match = team.matches.find((entry) => entry.participantId === id);
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'ladder-player' + (match ? ' is-matched' : '') + (id === team.leader ? ' is-leader' : '');
+    button.className = 'ladder-player' + (match ? ' is-matched' : '');
     button.textContent = id;
     button.disabled = !ladderReady || ladderAnimating || Boolean(match);
     button.setAttribute('aria-label', match ? id + ' 미션 배정 완료' : id + ' 사다리타기 시작');
@@ -555,17 +555,18 @@ function renderLadderPlayers(team) {
 function renderLadderMissions(team) {
   const container = $('#ladder-bottom-missions');
   container.replaceChildren();
-  team.missions.forEach((mission, index) => {
+  Array.from({ length: team.missionCount }, (_, index) => index).forEach((index) => {
     const card = document.createElement('article');
     const assigned = team.matches.find((match) => match.missionIndex === index);
-    card.className = 'ladder-mission' + (mission.type === 'special' ? ' is-special' : '') + (assigned ? ' is-assigned' : '');
+    card.className = 'ladder-mission' + (assigned ? ' is-assigned' : '');
     if (assigned) card.dataset.assignee = assigned.participantId;
     const label = document.createElement('span');
-    label.textContent = mission.type === 'special' ? '✦ SPECIAL' : 'MISSION 0' + (index + 1);
+    label.textContent = missionSlotLabel(index);
     const text = document.createElement('p');
-    text.textContent = mission.text;
+    text.textContent = '🔒';
+    text.setAttribute('aria-hidden', 'true');
     const assignee = document.createElement('strong');
-    assignee.textContent = assigned ? (assigned.participantId === team.leader ? '♛ ' : '') + assigned.participantId : '도착 대기';
+    assignee.textContent = assigned ? assigned.participantId + ' → ' + missionSlotLabel(index) : '봉인된 미션';
     card.append(label, text, assignee);
     container.append(card);
   });
@@ -575,47 +576,23 @@ function renderLadderResults(team) {
   const list = $('#ladder-result-list');
   list.replaceChildren();
   const heading = document.createElement('h2');
-  heading.textContent = team.complete ? 'TEAM COMPLETE / 최종 미션 배정' : '확정된 경로';
+  heading.textContent = team.complete ? 'TEAM COMPLETE / 블라인드 배정 결과' : '확정된 경로';
   list.append(heading);
   team.members.forEach((id) => {
     const match = team.matches.find((entry) => entry.participantId === id);
     const row = document.createElement('div');
-    row.className = 'ladder-result-row' + (id === team.leader ? ' is-leader' : '');
+    row.className = 'ladder-result-row';
     const name = document.createElement('strong');
-    name.textContent = (id === team.leader ? '♛ ' : '') + id + (id === team.leader ? ' · LEADER' : '');
+    name.textContent = id;
     const mission = document.createElement('span');
-    mission.textContent = match ? team.missions[match.missionIndex].text : '사다리 결과 대기';
+    mission.textContent = match ? '→ ' + missionSlotLabel(match.missionIndex) : '사다리 결과 대기';
     row.append(name, mission);
     list.append(row);
   });
 }
 
-function updateLeaderCallout(team, newLeader = false) {
-  const callout = $('#ladder-leader-callout');
-  if (!team.leader) { callout.hidden = true; callout.textContent = ''; return; }
-  callout.hidden = false;
-  callout.classList.toggle('is-celebrating', newLeader);
-  callout.textContent = '♛  TEAM LEADER · ' + team.leader + (newLeader ? ' · 스페셜 미션 당첨!' : '');
-}
-
-function celebrateLeader() {
-  const wrap = $('#ladder-svg-wrap');
-  wrap.classList.add('is-leader-burst');
-  const colors = ['#ffd66b', '#c4f89a', '#67f1e4', '#f69dff', '#8ab5ff'];
-  for (let index = 0; index < 36; index += 1) {
-    const piece = document.createElement('span');
-    piece.className = 'leader-confetti';
-    piece.style.left = (18 + Math.random() * 64) + '%';
-    piece.style.setProperty('--confetti-color', colors[index % colors.length]);
-    piece.style.setProperty('--fall-x', (Math.random() * 320 - 160) + 'px');
-    piece.style.setProperty('--fall-y', (130 + Math.random() * 260) + 'px');
-    piece.style.setProperty('--confetti-delay', (Math.random() * 260) + 'ms');
-    wrap.append(piece);
-  }
-  later(() => {
-    $$('.leader-confetti', wrap).forEach((piece) => piece.remove());
-    wrap.classList.remove('is-leader-burst');
-  }, 2300);
+function missionSlotLabel(index) {
+  return 'MISSION ' + String.fromCharCode(65 + index);
 }
 
 function renderLadder(team, animateStructure) {
@@ -623,13 +600,12 @@ function renderLadder(team, animateStructure) {
   const rungCount = renderLadderStructure(team, animateStructure);
   renderLadderMissions(team);
   renderLadderResults(team);
-  updateLeaderCallout(team);
   const next = $('#ladder-next-button');
   next.hidden = !team.complete;
   next.textContent = raffle.activeTeamIndex === 2 ? '세 팀 최종 티켓 보기' : '팀 티켓 완성 · 다음 팀으로';
   if (team.complete) {
     $('#ladder-heading').textContent = '사다리 결과가 모두 정해졌어요.';
-    $('#ladder-description').textContent = '스페셜 미션 당첨자가 팀장이 되고, 다섯 경로가 티켓에 기록됐어요.';
+    $('#ladder-description').textContent = '다섯 경로가 확정되었습니다. 실제 미션과 팀장 정보는 티켓에만 표시됩니다.';
   } else {
     $('#ladder-heading').textContent = '이니셜을 눌러 미션을 연결하세요.';
     $('#ladder-description').textContent = '빛이 지나간 경로는 계속 남아 있어요. 참가자를 한 명씩 선택하세요.';
@@ -689,23 +665,17 @@ function matchParticipant(participantId) {
   addLadderTrace(updated, participantId, !motionQuery.matches);
   renderLadderMissions(updated);
   renderLadderResults(updated);
-  const specialWinner = match.missionIndex === 0;
-  if (specialWinner) {
-    updateLeaderCallout(updated, true);
-    sound.reveal();
-    celebrateLeader();
-  }
-  status.textContent = participantId + '의 사다리 경로가 ' + updated.missions[match.missionIndex].text + '에 도착했습니다.';
+  status.textContent = participantId + ' → ' + missionSlotLabel(match.missionIndex) + ' 배정 완료';
   const finish = () => {
     ladderAnimating = false;
     renderLadderPlayers(raffle.getTeam(team.id));
     renderLadderResults(raffle.getTeam(team.id));
     if (raffle.getTeam(team.id).complete) {
       $('#ladder-heading').textContent = '다섯 명 모두 미션을 받았어요!';
-      $('#ladder-description').textContent = '스페셜 미션 당첨자를 팀장으로 기록했습니다.';
+      $('#ladder-description').textContent = '실제 미션과 팀장 정보는 운영자용 개인 티켓에만 표시됩니다.';
       $('#ladder-next-button').hidden = false;
       $('#ladder-next-button').textContent = raffle.activeTeamIndex === 2 ? '세 팀 최종 티켓 보기' : '팀 티켓 완성 · 다음 팀으로';
-      status.textContent = '팀의 미션 매칭이 완료됐어요. 팀 티켓을 완성합니다.';
+      status.textContent = '팀의 블라인드 배정이 완료됐습니다.';
     }
   };
   if (motionQuery.matches) finish();
@@ -752,11 +722,10 @@ function renderOverview() {
     team.members.forEach((id) => {
       const chip = document.createElement('span');
       chip.textContent = id;
-      if (id === team.leader) chip.classList.add('is-leader');
       members.append(chip);
     });
     const progress = document.createElement('small');
-    progress.textContent = team.complete ? 'TEAM COMPLETE' : team.members.length + ' / 5 MEMBERS · ' + (team.missions.length || 0) + ' / 5 MISSIONS';
+    progress.textContent = team.complete ? 'TEAM COMPLETE' : team.members.length + ' / 5 MEMBERS · ' + team.missionCount + ' / 5 SEALED MISSIONS';
     card.append(header, destination, members, progress);
     container.append(card);
   });
@@ -776,7 +745,7 @@ function renderHome() {
   $('#slot-state').textContent = team.ride ? '✓' : '✧';
   $('#ticket-owner-name').textContent = team.members.length ? team.members.join(' · ') : (config.kind === 'fixed' ? '확정 팀원 5명' : '참가자 5명 추첨 대기');
   $('#owner-slot-state').textContent = team.members.length === 5 ? '✓' : '✧';
-  $('.mission-slot strong').textContent = team.missions.length ? team.missions.length + '개 미션 확정' : '스페셜 1개 + 일반 4개';
+  $('.mission-slot strong').textContent = team.missionCount ? team.missionCount + '개 블라인드 미션 확정' : '블라인드 미션 5개';
   $('#ticket-art-caption').textContent = team.ride ? team.config.label.toUpperCase() + ' / ADVENTURE READY' : config.difficulty.toUpperCase() + ' DIFFICULTY / DESTINATION';
   $('#ticket-number').textContent = 'EV — MT ' + (team.config.difficulty === '상' ? 'H' : 'M') + team.config.number;
   $('#stub-owner').textContent = 'TEAM\n0' + (team.config.difficulty === '상' ? team.config.number : 3);
@@ -790,7 +759,9 @@ function renderHome() {
             : '사다리타기 이어하기';
   $('#draw-button-label').textContent = buttonText;
   drawButton.disabled = false;
-  $('#draw-note').textContent = phase === 'ride'
+  $('#draw-note').textContent = raffle.migratedLegacyState
+    ? '새 미션 규칙에 맞춰 기존 팀의 사다리 추첨을 다시 진행해 주세요.'
+    : phase === 'ride'
     ? config.difficulty + ' 난이도 · 같은 난이도에서 놀이기구 중복 없음'
     : '현재 단계와 추첨 결과는 이 브라우저에 저장됩니다.';
   $('#ticket-stamp').innerHTML = team.complete ? 'TEAM<br>COMPLETE' : 'ADVENTURE<br>PASS';
@@ -828,54 +799,30 @@ function continueCurrentTeam() {
   else if (team.phase === 'ladder' || team.phase === 'complete') showLadder(false);
 }
 
-function createFinalTicket(team) {
+function createFinalSummary(team) {
   const article = document.createElement('article');
-  article.className = 'final-ticket';
-  article.dataset.difficulty = team.config.difficulty;
-  const top = document.createElement('header');
-  top.className = 'final-ticket-top';
-  const label = document.createElement('span');
-  label.textContent = 'EVERLAND / ADVENTURE PASS';
-  const number = document.createElement('strong');
-  number.textContent = team.config.label.toUpperCase();
-  top.append(label, number);
-  const ride = document.createElement('div');
-  ride.className = 'final-ticket-ride';
-  ride.append(makeIcon(team.ride.theme));
-  const rideText = document.createElement('div');
-  const difficulty = document.createElement('span');
-  difficulty.textContent = team.config.difficulty + ' 난이도 · ' + team.config.number + '팀';
-  const rideName = document.createElement('strong');
-  rideName.textContent = team.ride.name;
-  rideText.append(difficulty, rideName);
-  ride.append(rideText);
-  const list = document.createElement('ol');
-  list.className = 'final-ticket-members';
+  article.className = 'final-summary';
+  const heading = document.createElement('header');
+  const title = document.createElement('strong');
+  title.textContent = team.config.label;
+  const ride = document.createElement('span');
+  ride.textContent = team.ride.name;
+  heading.append(title, ride);
+  const assignments = document.createElement('ul');
+  assignments.className = 'final-summary-assignments';
   team.members.forEach((id) => {
     const match = team.matches.find((entry) => entry.participantId === id);
-    const mission = team.missions[match.missionIndex];
     const row = document.createElement('li');
-    row.className = mission.type === 'special' ? 'is-special' : '';
-    const person = document.createElement('strong');
-    person.textContent = (id === team.leader ? '♛ ' : '') + id;
-    if (id === team.leader) person.classList.add('is-leader');
-    const assignment = document.createElement('div');
-    const kind = document.createElement('span');
-    kind.textContent = mission.type === 'special' ? '✦ SPECIAL MISSION' : 'MISSION';
-    const text = document.createElement('p');
-    text.textContent = mission.text;
-    assignment.append(kind, text);
-    row.append(person, assignment);
-    list.append(row);
+    const participant = document.createElement('strong');
+    participant.textContent = id;
+    const mission = document.createElement('span');
+    mission.textContent = match ? '→ ' + missionSlotLabel(match.missionIndex) : '배정 대기';
+    row.append(participant, mission);
+    assignments.append(row);
   });
-  const footer = document.createElement('footer');
-  footer.textContent = '♛ TEAM LEADER · ' + team.leader + '     ✦ TEAM COMPLETE';
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'text-button download-ticket-button';
-  button.textContent = 'PNG 저장 ↓';
-  button.addEventListener('click', () => saveTicketPng(team));
-  article.append(top, ride, list, footer, button);
+  const note = document.createElement('p');
+  note.textContent = '미션 내용과 팀장 정보는 운영자용 개인 티켓에서 확인합니다.';
+  article.append(heading, assignments, note);
   return article;
 }
 
@@ -884,113 +831,10 @@ function showFinal() {
   setAccent(null);
   const container = $('#final-ticket-grid');
   container.replaceChildren();
-  raffle.teams.forEach((team) => container.append(createFinalTicket(team)));
-  $('#footer-caption').textContent = 'THREE TEAMS / ALL TICKETS COMPLETE';
-  status.textContent = '세 팀의 완성된 티켓을 확인하고 PNG 또는 ZIP으로 저장할 수 있어요.';
+  raffle.teams.forEach((team) => container.append(createFinalSummary(team)));
+  $('#footer-caption').textContent = 'THREE TEAMS / BLIND RESULTS COMPLETE';
+  status.textContent = '세 팀의 블라인드 배정이 끝났습니다. 운영자용 티켓 출력 화면에서 개인 티켓을 처리하세요.';
   focusHeading('#final-heading');
-}
-
-function roundedRect(ctx, x, y, width, height, radius) {
-  ctx.beginPath();
-  ctx.roundRect(x, y, width, height, radius);
-}
-
-function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 8) {
-  const words = text.split(/\s+/);
-  const lines = [];
-  let line = '';
-  words.forEach((word) => {
-    const candidate = line ? line + ' ' + word : word;
-    if (line && ctx.measureText(candidate).width > maxWidth) { lines.push(line); line = word; }
-    else line = candidate;
-  });
-  if (line) lines.push(line);
-  const visible = lines.slice(0, maxLines);
-  if (lines.length > maxLines) visible[maxLines - 1] = visible[maxLines - 1].replace(/[.…]+$/, '') + '…';
-  visible.forEach((value, index) => ctx.fillText(value, x, y + index * lineHeight));
-  return visible.length;
-}
-
-function ticketCanvas(team) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 3600;
-  canvas.height = 2400;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(2, 2);
-  ctx.fillStyle = '#e7eddf';
-  roundedRect(ctx, 0, 0, 1800, 1200, 24);
-  ctx.fill();
-  ctx.fillStyle = '#c4f89a';
-  ctx.fillRect(1690, 0, 110, 1200);
-  ctx.strokeStyle = 'rgba(33,67,41,.3)';
-  ctx.setLineDash([7, 8]);
-  ctx.beginPath(); ctx.moveTo(1690, 22); ctx.lineTo(1690, 1178); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = '#243c2c';
-  ctx.font = '800 27px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-  ctx.fillText('EVERLAND / ADVENTURE PASS', 70, 78);
-  ctx.fillStyle = '#637762';
-  ctx.font = '600 18px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-  ctx.fillText(team.config.difficulty + ' 난이도   ·   TEAM ' + (team.config.difficulty === '상' ? 'H' : 'M') + '0' + team.config.number, 70, 125);
-  ctx.fillStyle = '#274b33';
-  ctx.font = '900 54px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-  ctx.fillText(team.ride.name, 70, 205);
-  ctx.fillStyle = '#55735c';
-  ctx.font = '600 18px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-  ctx.fillText('ATTRACTION CONFIRMED / ' + team.ride.tag, 70, 244);
-  ctx.strokeStyle = 'rgba(61,99,66,.24)';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(70, 285); ctx.lineTo(1650, 285); ctx.stroke();
-  const cardTop = 320;
-  const cardHeight = 720;
-  const cardGap = 16;
-  const cardWidth = (1580 - cardGap * 4) / 5;
-  team.members.forEach((id, index) => {
-    const match = team.matches.find((entry) => entry.participantId === id);
-    const mission = team.missions[match.missionIndex];
-    const x = 70 + index * (cardWidth + cardGap);
-    const special = mission.type === 'special';
-    ctx.fillStyle = special ? '#fff3d6' : '#f5f7ef';
-    ctx.strokeStyle = special ? '#d6a43c' : 'rgba(70,108,60,.23)';
-    ctx.lineWidth = special ? 3 : 2;
-    roundedRect(ctx, x, cardTop, cardWidth, cardHeight, 12);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = special ? '#a77919' : '#71856c';
-    ctx.font = '700 17px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-    ctx.fillText(special ? '✦ SPECIAL MISSION' : 'MISSION 0' + (match.missionIndex + 1), x + 22, cardTop + 42);
-    ctx.fillStyle = '#28422e';
-    ctx.font = '900 47px monospace';
-    ctx.fillText(id, x + 22, cardTop + 115);
-    if (id === team.leader) {
-      ctx.fillStyle = '#b78a25';
-      ctx.font = '800 16px sans-serif';
-      ctx.fillText('♛ TEAM LEADER', x + 22, cardTop + 152);
-    }
-    ctx.strokeStyle = 'rgba(61,99,66,.18)';
-    ctx.beginPath(); ctx.moveTo(x + 22, cardTop + 180); ctx.lineTo(x + cardWidth - 22, cardTop + 180); ctx.stroke();
-    ctx.fillStyle = '#344e39';
-    ctx.font = '600 22px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-    wrapCanvasText(ctx, mission.text, x + 22, cardTop + 230, cardWidth - 44, 34, 12);
-  });
-  ctx.fillStyle = '#345a3e';
-  ctx.font = '900 28px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-  ctx.fillText('TEAM COMPLETE', 70, 1110);
-  ctx.fillStyle = '#59745d';
-  ctx.font = '600 19px "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
-  ctx.fillText('TEAM LEADER  ♛  ' + team.leader + '     /     5 PARTICIPANTS · 5 MISSIONS', 70, 1152);
-  ctx.fillStyle = '#29402a';
-  ctx.font = '700 19px monospace';
-  ctx.save();
-  ctx.translate(1748, 880);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillText('EVERLAND / MT / 2026', 0, 0);
-  ctx.restore();
-  return canvas;
-}
-
-function canvasPng(team) {
-  return new Promise((resolve, reject) => {
-    ticketCanvas(team).toBlob((blob) => blob ? resolve(blob) : reject(new Error('PNG 이미지를 만들지 못했습니다.')), 'image/png');
-  });
 }
 
 function downloadBlob(blob, filename) {
@@ -1004,85 +848,15 @@ function downloadBlob(blob, filename) {
   window.setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-function filenameFor(team) {
-  return 'Everland_MT_' + (team.config.difficulty === '상' ? 'High' : 'Medium') + '_Team_' + team.config.number + '.png';
-}
-
-async function saveTicketPng(team) {
-  try {
-    const blob = await canvasPng(team);
-    downloadBlob(blob, filenameFor(team));
-    status.textContent = team.config.label + ' 티켓을 PNG로 저장했어요.';
-  } catch (error) { status.textContent = error.message; }
-}
-
-function crc32(bytes) {
-  let crc = 0xffffffff;
-  for (let index = 0; index < bytes.length; index += 1) {
-    crc ^= bytes[index];
-    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-async function zipPngFiles(entries) {
-  const encoder = new TextEncoder();
-  const localChunks = [];
-  const centralChunks = [];
-  let localOffset = 0;
-  for (const entry of entries) {
-    const name = encoder.encode(entry.name);
-    const payload = new Uint8Array(await entry.blob.arrayBuffer());
-    const crc = crc32(payload);
-    const local = new Uint8Array(30 + name.length + payload.length);
-    const localView = new DataView(local.buffer);
-    localView.setUint32(0, 0x04034b50, true);
-    localView.setUint16(4, 20, true);
-    localView.setUint16(6, 0x0800, true);
-    localView.setUint16(8, 0, true);
-    localView.setUint32(14, crc, true);
-    localView.setUint32(18, payload.length, true);
-    localView.setUint32(22, payload.length, true);
-    localView.setUint16(26, name.length, true);
-    local.set(name, 30);
-    local.set(payload, 30 + name.length);
-    localChunks.push(local);
-
-    const central = new Uint8Array(46 + name.length);
-    const centralView = new DataView(central.buffer);
-    centralView.setUint32(0, 0x02014b50, true);
-    centralView.setUint16(4, 0x0314, true);
-    centralView.setUint16(6, 20, true);
-    centralView.setUint16(8, 0x0800, true);
-    centralView.setUint16(10, 0, true);
-    centralView.setUint32(16, crc, true);
-    centralView.setUint32(20, payload.length, true);
-    centralView.setUint32(24, payload.length, true);
-    centralView.setUint16(28, name.length, true);
-    centralView.setUint32(42, localOffset, true);
-    central.set(name, 46);
-    centralChunks.push(central);
-    localOffset += local.length;
-  }
-  const centralSize = centralChunks.reduce((total, chunk) => total + chunk.length, 0);
-  const end = new Uint8Array(22);
-  const endView = new DataView(end.buffer);
-  endView.setUint32(0, 0x06054b50, true);
-  endView.setUint16(8, entries.length, true);
-  endView.setUint16(10, entries.length, true);
-  endView.setUint32(12, centralSize, true);
-  endView.setUint32(16, localOffset, true);
-  return new Blob([...localChunks, ...centralChunks, end], { type: 'application/zip' });
-}
-
-async function saveAllTickets() {
-  const button = $('#download-all-button');
+function exportOperatorData() {
+  const button = $('#export-operator-data-button');
+  if (!window.confirm('이 파일에는 참가자별 실제 미션과 팀장 정보가 포함됩니다. 운영자에게만 전달하시겠습니까?')) return;
   button.disabled = true;
   try {
-    const entries = [];
-    for (const team of raffle.teams) entries.push({ name: filenameFor(team), blob: await canvasPng(team) });
-    downloadBlob(await zipPngFiles(entries), 'Everland_MT_Team_Tickets.zip');
-    status.textContent = '완성된 세 팀의 티켓을 PNG 세 장이 들어 있는 ZIP으로 저장했어요.';
+    const payload = raffle.exportOperatorData();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+    downloadBlob(blob, 'Everland_MT_operator_tickets.json');
+    status.textContent = '운영자 기기로 전달할 파일을 저장했습니다. 실제 미션과 팀장 정보가 포함되어 있습니다.';
   } catch (error) { status.textContent = error.message; }
   finally { button.disabled = false; }
 }
@@ -1157,7 +931,7 @@ keepButton.addEventListener('click', () => {
 $('#mission-draw-button').addEventListener('click', drawMissions);
 $('#mission-next-button').addEventListener('click', startLadder);
 $('#ladder-next-button').addEventListener('click', advanceAfterLadder);
-$('#download-all-button').addEventListener('click', saveAllTickets);
+$('#export-operator-data-button').addEventListener('click', exportOperatorData);
 $('#brand-home').addEventListener('click', (event) => { event.preventDefault(); showHome(); });
 skipButton.addEventListener('click', () => {
   if (stage === 'draw') showReveal(true);

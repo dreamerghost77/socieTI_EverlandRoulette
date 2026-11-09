@@ -36,23 +36,31 @@
 
   // Keep one ride-specific special mission per attraction so the association is easy to edit.
   const specialMissions = Object.freeze({
-    timber: Object.freeze({ id: 'special-timber', type: 'special', text: '공식 탑승 사진 촬영 구간에서 양손 브이 포즈 취하기' }),
-    river: Object.freeze({ id: 'special-river', type: 'special', text: '하차 후 안전 구역에서 팀원들과 정글 탐험대 포즈로 사진 찍기' }),
-    thunder: Object.freeze({ id: 'special-thunder', type: 'special', text: '하차 후 지정된 안전 구역에서 물보라를 피하는 포즈로 사진 찍기' }),
-    storm: Object.freeze({ id: 'special-storm', type: 'special', text: '탑승 후 안전 구역에서 오늘의 스릴을 한 문장으로 소개하는 영상 촬영하기' }),
+    timber: Object.freeze({ id: 'special-timber', type: 'special', text: '공식 사진 구간에서 양손 브이 포즈로 사진찍히기' }),
+    river: Object.freeze({ id: 'special-river', type: 'special', text: '탑승 이후 제일 물 많이 맞은 사람으로 지목되기' }),
+    thunder: Object.freeze({ id: 'special-thunder', type: 'special', text: '탑승 이후 제일 물 많이 맞은 사람으로 지목되기' }),
+    storm: Object.freeze({ id: 'special-storm', type: 'special', text: '탑승 전 1~100 사이 숫자 5개 뽑기 이후 탑승 이후 기억력테스트 성공하기' }),
   });
 
   const generalMissions = Object.freeze([
-    Object.freeze({ id: 'general-churros', type: 'general', text: '구매한 츄러스를 한입 먹고 팀원과 먹방 인증 사진 찍기' }),
-    Object.freeze({ id: 'general-staff-selfie', type: 'general', text: '직원분의 동의를 얻어 팀 셀카 촬영하기' }),
-    Object.freeze({ id: 'general-reels', type: 'general', text: '팀원만 출연하는 릴스 스타일 에버랜드 홍보 영상 촬영하기' }),
-    Object.freeze({ id: 'general-card', type: 'general', text: '상대가 동의하면 사회공헌단 명함을 건네고 응원 한마디 전하기' }),
-    Object.freeze({ id: 'general-color', type: 'general', text: '팀원 모두가 같은 색을 찾아 손가락으로 가리키며 기념사진 찍기' }),
-    Object.freeze({ id: 'general-pose', type: 'general', text: '다섯 명이 각자 다른 동물 포즈를 만들고 단체사진 남기기' }),
-    Object.freeze({ id: 'general-slogan', type: 'general', text: '팀 이름과 구호를 정해 함께 외치는 짧은 영상 촬영하기' }),
-    Object.freeze({ id: 'general-map', type: 'general', text: '공원 안내 지도를 보고 다음에 가고 싶은 장소를 하나씩 소개하기' }),
-    Object.freeze({ id: 'general-thanks', type: 'general', text: '팀원 한 명에게 고마웠던 일을 한 문장으로 말하고 기록하기' }),
-    Object.freeze({ id: 'general-photo', type: 'general', text: '촬영에 동의한 팀원만 나오도록 오늘의 기념사진 찍기' }),
+    Object.freeze({ id: 'general-01', type: 'general', text: '본인 포함 팀원 3명 이상 츄러스 사먹기' }),
+    Object.freeze({ id: 'general-02', type: 'general', text: '직원의 동의를 구한 뒤 셀카 찍기' }),
+    Object.freeze({ id: 'general-03', type: 'general', text: '릴스 형식의 에버랜드 홍보 영상 찍기' }),
+    Object.freeze({ id: 'general-04', type: 'general', text: '모르는 사람에게 사회공헌단 명함 건네고 응원받기' }),
+    Object.freeze({ id: 'general-05', type: 'general', text: '에버랜드에서 빨주노초파남보 색깔 7가지 찾아오기' }),
+    Object.freeze({ id: 'general-06', type: 'general', text: '본인이 중앙을 차지한 단체사진 3개 이상 찍기' }),
+    Object.freeze({ id: 'general-07', type: 'general', text: '사회공헌 활동 이후 인증(예: 쓰레기 주워 분리수거)' }),
+    Object.freeze({ id: 'general-08', type: 'general', text: '본인이 낙오된 단체사진 한 장 이상 찍기' }),
+    Object.freeze({ id: 'general-09', type: 'general', text: '모두가 정면을 바라보지 않는 단체사진 1장 이상 찍기' }),
+    Object.freeze({ id: 'general-10', type: 'general', text: '본인 제외 다른 팀원들의 단독사진 1장씩 찍어오기' }),
+    Object.freeze({ id: 'general-11', type: 'general', text: '틈내서 김홍종 미적분학 연습문제 3개 풀기' }),
+    Object.freeze({ id: 'general-12', type: 'general', text: '다른 팀 만나서 사진찍기' }),
+    Object.freeze({ id: 'general-13', type: 'general', text: '다른 단원 한 명을 지목해 1분 동안 공주님·왕자님처럼 모시기' }),
+    Object.freeze({ id: 'general-14', type: 'general', text: '에버랜드 머리띠 쓰고 2시간 이상 돌아다니기' }),
+    Object.freeze({ id: 'general-15', type: 'general', text: '에버랜드에서 공주님·왕자님 콘셉트로 인생샷 찍기' }),
+    Object.freeze({ id: 'general-16', type: 'general', text: '팀원들이 정해준 별명으로 1시간 동안 불리기' }),
+    Object.freeze({ id: 'general-17', type: 'general', text: '에버랜드에서 혼자 패션 화보 3장 찍기' }),
+    Object.freeze({ id: 'general-18', type: 'general', text: '다른 단원 한 명과 연애 프로그램 첫 만남 장면 연기하기' }),
   ]);
 
   const data = Object.freeze({ rides, teams, specialMissions, generalMissions });
