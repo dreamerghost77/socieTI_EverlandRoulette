@@ -23,6 +23,17 @@ function fillRandomTeam(model, teamId) {
   }
 }
 
+function completeEveryTeam(model) {
+  teams.forEach((team, index) => {
+    model.drawRide(team.id);
+    if (team.kind === 'random') fillRandomTeam(model, team.id);
+    model.drawMissions(team.id);
+    model.createLadder(team.id);
+    model.getTeam(team.id).members.forEach((participantId) => model.matchParticipant(team.id, participantId));
+    if (index < teams.length - 1) model.advanceTeam();
+  });
+}
+
 function storedTeam(model, teamId) {
   return model.state.teams.find((team) => team.id === teamId);
 }
@@ -175,7 +186,10 @@ test('ladder edges determine the shuffled special mission winner and stay stable
   assert.equal(publicTeam.missionCount, 5);
   assert.equal('missionIds' in publicTeam, false);
   assert.equal('missions' in publicTeam, false);
-  assert.equal('leader' in publicTeam, false);
+  assert.equal(publicTeam.leader, null);
+  assert.equal(publicTeam.missionSlots.filter((slot) => slot.type === 'special').length, 1);
+  assert.equal(publicTeam.missionSlots.filter((slot) => slot.type === 'general').length, 4);
+  assert.equal(JSON.stringify(publicTeam).includes(specialMissions[team.ride.theme].text), false);
   const ladder = model.createLadder('high-1');
   const expected = getPermutation(ladder);
   assert.throws(() => model.advanceTeam());
@@ -189,6 +203,10 @@ test('ladder edges determine the shuffled special mission winner and stay stable
   assert.equal(operatorTeam.leader, specialWinner);
   assert.equal(operatorTeam.assignments.find((assignment) => assignment.missionType === 'special').participantId, specialWinner);
   assert.equal(operatorTeam.assignments.filter((assignment) => assignment.isTeamLeader).length, 1);
+  assert.equal(complete.leader, specialWinner);
+  assert.equal(complete.matches.find((match) => match.participantId === specialWinner).missionType, 'special');
+  assert.equal(complete.matches.find((match) => match.participantId === specialWinner).isTeamLeader, true);
+  assert.equal(JSON.stringify(complete).includes(specialMissions[team.ride.theme].text), false);
   assert.equal('missionId' in complete.matches[0], false);
   model.markTicketCreated('high-1', specialWinner);
   assert.equal(model.advanceTeam().config.id, 'high-2');
@@ -198,6 +216,43 @@ test('ladder edges determine the shuffled special mission winner and stay stable
   assert.deepEqual(restored.matches, complete.matches);
   assert.equal(restoredModel.getOperatorTeams().find((entry) => entry.id === 'high-1').leader, specialWinner);
   assert.equal(restoredModel.getOperatorTeams().find((entry) => entry.id === 'high-1').assignments.find((assignment) => assignment.participantId === specialWinner).ticketCreated, true);
+});
+
+test('final JSON export contains the complete stable draw, ladder paths, missions, and leaders', () => {
+  const storage = new MemoryStorage();
+  const model = new RaffleState({ storage, randomIndex: stableRandom });
+  completeEveryTeam(model);
+  assert.equal(model.allComplete, true);
+
+  const result = model.exportResults();
+  assert.equal(result.eventName, 'EVERLAND MT');
+  assert.equal(Number.isNaN(Date.parse(result.completedAt)), false);
+  assert.equal(result.participantCount, 15);
+  assert.equal(result.teamCount, 3);
+  assert.equal(result.participants.length, 15);
+  assert.equal(new Set(result.participants.map((participant) => participant.id)).size, 15);
+
+  result.teams.forEach((team) => {
+    assert.equal(team.members.length, 5);
+    assert.equal(team.ladder.assignments.length, 5);
+    assert.equal(team.ladder.connections.length, team.ladder.rows.reduce((sum, row) => sum + row.length, 0));
+    assert.equal(team.members.filter((member) => member.missionType === 'SPECIAL').length, 1);
+    assert.equal(team.members.filter((member) => member.isLeader).length, 1);
+    assert.equal(team.members.find((member) => member.missionType === 'SPECIAL').id, team.leaderId);
+    team.members.forEach((member) => {
+      assert.ok(member.missionId);
+      assert.ok(member.missionText);
+      assert.equal(member.missionSlot, String.fromCharCode(65 + member.missionIndex));
+      const ladderAssignment = team.ladder.assignments.find((entry) => entry.participantId === member.id);
+      assert.equal(ladderAssignment.missionId, member.missionId);
+      assert.equal(ladderAssignment.destinationSlot, member.missionIndex);
+      assert.equal(ladderAssignment.isLeader, member.isLeader);
+    });
+  });
+  assert.deepEqual(model.exportResults(), result);
+
+  const restored = new RaffleState({ storage, randomIndex: stableRandom });
+  assert.deepEqual(restored.exportResults(), result);
 });
 
 test('a completed participant cannot be reselected to alter their mission', () => {

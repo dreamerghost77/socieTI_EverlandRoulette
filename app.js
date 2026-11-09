@@ -541,12 +541,15 @@ function renderLadderPlayers(team) {
   container.replaceChildren();
   team.members.forEach((id) => {
     const match = team.matches.find((entry) => entry.participantId === id);
+    const isLeader = Boolean(match?.isTeamLeader);
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'ladder-player' + (match ? ' is-matched' : '');
-    button.textContent = id;
+    button.className = 'ladder-player' + (match ? ' is-matched' : '') + (isLeader ? ' is-leader' : '');
+    button.textContent = isLeader ? '♛ ' + id : id;
     button.disabled = !ladderReady || ladderAnimating || Boolean(match);
-    button.setAttribute('aria-label', match ? id + ' 미션 배정 완료' : id + ' 사다리타기 시작');
+    button.setAttribute('aria-label', match
+      ? id + (isLeader ? ' 팀장 당첨, 스페셜 미션 배정 완료' : ' 일반 미션 배정 완료')
+      : id + ' 사다리타기 시작');
     button.addEventListener('click', () => matchParticipant(id));
     container.append(button);
   });
@@ -558,16 +561,28 @@ function renderLadderMissions(team) {
   Array.from({ length: team.missionCount }, (_, index) => index).forEach((index) => {
     const card = document.createElement('article');
     const assigned = team.matches.find((match) => match.missionIndex === index);
-    card.className = 'ladder-mission' + (assigned ? ' is-assigned' : '');
+    const missionType = team.missionSlots[index]?.type;
+    const isSpecial = missionType === 'special';
+    card.className = 'ladder-mission'
+      + (isSpecial ? ' is-special' : '')
+      + (assigned ? ' is-assigned' : '');
+    card.dataset.slotIndex = String(index);
     if (assigned) card.dataset.assignee = assigned.participantId;
-    const label = document.createElement('span');
-    label.textContent = missionSlotLabel(index);
+    const typeLabel = document.createElement('span');
+    typeLabel.className = 'mission-type-label';
+    typeLabel.textContent = isSpecial ? 'SPECIAL MISSION' : 'NORMAL MISSION';
+    const slotLabel = document.createElement('span');
+    slotLabel.className = 'mission-slot-label';
+    slotLabel.textContent = missionSlotLabel(index);
     const text = document.createElement('p');
     text.textContent = '🔒';
     text.setAttribute('aria-hidden', 'true');
     const assignee = document.createElement('strong');
-    assignee.textContent = assigned ? assigned.participantId + ' → ' + missionSlotLabel(index) : '봉인된 미션';
-    card.append(label, text, assignee);
+    assignee.textContent = assigned
+      ? assigned.participantId + ' → ' + missionSlotLabel(index) + (assigned.isTeamLeader ? ' · TEAM LEADER' : '')
+      : '봉인된 미션';
+    card.setAttribute('aria-label', (isSpecial ? 'SPECIAL MISSION' : 'NORMAL MISSION') + ', ' + missionSlotLabel(index) + ', 내용 봉인');
+    card.append(typeLabel, slotLabel, text, assignee);
     container.append(card);
   });
 }
@@ -581,11 +596,16 @@ function renderLadderResults(team) {
   team.members.forEach((id) => {
     const match = team.matches.find((entry) => entry.participantId === id);
     const row = document.createElement('div');
-    row.className = 'ladder-result-row';
+    row.className = 'ladder-result-row'
+      + (match?.missionType === 'special' ? ' is-special' : '')
+      + (match?.isTeamLeader ? ' is-leader' : '');
     const name = document.createElement('strong');
-    name.textContent = id;
+    name.textContent = match?.isTeamLeader ? '♛ ' + id : id;
     const mission = document.createElement('span');
-    mission.textContent = match ? '→ ' + missionSlotLabel(match.missionIndex) : '사다리 결과 대기';
+    const typeLabel = match?.missionType === 'special' ? 'SPECIAL MISSION' : 'NORMAL MISSION';
+    mission.textContent = match
+      ? typeLabel + ' · ' + missionSlotLabel(match.missionIndex) + (match.isTeamLeader ? ' · TEAM LEADER' : '')
+      : '사다리 결과 대기';
     row.append(name, mission);
     list.append(row);
   });
@@ -595,20 +615,57 @@ function missionSlotLabel(index) {
   return 'MISSION ' + String.fromCharCode(65 + index);
 }
 
+function celebrateTeamLeader(participantId, missionIndex) {
+  const wrap = $('#ladder-svg-wrap');
+  const card = $('#ladder-bottom-missions').querySelector('[data-slot-index="' + missionIndex + '"]');
+  const callout = $('#ladder-leader-callout');
+  if (card) card.classList.add('is-leader-hit');
+  callout.hidden = false;
+  callout.textContent = '♛ ' + participantId + ' · TEAM LEADER';
+  callout.classList.remove('is-celebrating');
+  wrap.classList.remove('is-leader-burst');
+  void wrap.offsetWidth;
+  callout.classList.add('is-celebrating');
+  wrap.classList.add('is-leader-burst');
+  wrap.querySelectorAll('.leader-confetti').forEach((particle) => particle.remove());
+  const colors = ['#ffd56f', '#fff0b2', '#f58bd0', '#8ef3da', '#b4c8ff'];
+  Array.from({ length: 26 }, (_, index) => {
+    const particle = document.createElement('span');
+    particle.className = 'leader-confetti';
+    particle.style.left = (4 + Math.random() * 92) + '%';
+    particle.style.setProperty('--confetti-color', colors[index % colors.length]);
+    particle.style.setProperty('--fall-x', Math.round((Math.random() - .5) * 220) + 'px');
+    particle.style.setProperty('--fall-y', Math.round(80 + Math.random() * 180) + 'px');
+    particle.style.setProperty('--confetti-delay', (Math.random() * .3).toFixed(2) + 's');
+    wrap.append(particle);
+    window.setTimeout(() => particle.remove(), 2100);
+  });
+  window.setTimeout(() => {
+    if (card?.isConnected) card.classList.remove('is-leader-hit');
+    wrap.classList.remove('is-leader-burst');
+    callout.classList.remove('is-celebrating');
+  }, 1900);
+  status.textContent = participantId + ' 팀장 당첨! 실제 미션 내용은 공개하지 않습니다.';
+}
+
 function renderLadder(team, animateStructure) {
   renderLadderPlayers(team);
   const rungCount = renderLadderStructure(team, animateStructure);
   renderLadderMissions(team);
   renderLadderResults(team);
   const next = $('#ladder-next-button');
+  const leaderCallout = $('#ladder-leader-callout');
+  leaderCallout.hidden = !team.leader;
+  leaderCallout.textContent = team.leader ? '♛ ' + team.leader + ' · TEAM LEADER' : '';
+  leaderCallout.classList.remove('is-celebrating');
   next.hidden = !team.complete;
   next.textContent = raffle.activeTeamIndex === 2 ? '세 팀 최종 티켓 보기' : '팀 티켓 완성 · 다음 팀으로';
   if (team.complete) {
     $('#ladder-heading').textContent = '사다리 결과가 모두 정해졌어요.';
-    $('#ladder-description').textContent = '다섯 경로가 확정되었습니다. 실제 미션과 팀장 정보는 티켓에만 표시됩니다.';
+    $('#ladder-description').textContent = '미션 유형과 팀장 당첨자를 공개합니다. 실제 미션 내용은 계속 봉인됩니다.';
   } else {
-    $('#ladder-heading').textContent = '이니셜을 눌러 미션을 연결하세요.';
-    $('#ladder-description').textContent = '빛이 지나간 경로는 계속 남아 있어요. 참가자를 한 명씩 선택하세요.';
+    $('#ladder-heading').textContent = '이니셜을 눌러 미션에 연결하세요.';
+    $('#ladder-description').textContent = 'SPECIAL MISSION 위치와 결과를 공개합니다. 실제 미션 내용은 티켓에 도착할 때까지 봉인됩니다.';
   }
   ladderReady = false;
   renderLadderPlayers(team);
@@ -665,14 +722,17 @@ function matchParticipant(participantId) {
   addLadderTrace(updated, participantId, !motionQuery.matches);
   renderLadderMissions(updated);
   renderLadderResults(updated);
-  status.textContent = participantId + ' → ' + missionSlotLabel(match.missionIndex) + ' 배정 완료';
+  status.textContent = match.isTeamLeader
+    ? participantId + ' → SPECIAL MISSION · TEAM LEADER'
+    : participantId + ' → NORMAL MISSION · ' + missionSlotLabel(match.missionIndex);
   const finish = () => {
     ladderAnimating = false;
     renderLadderPlayers(raffle.getTeam(team.id));
     renderLadderResults(raffle.getTeam(team.id));
+    if (match.isTeamLeader) celebrateTeamLeader(participantId, match.missionIndex);
     if (raffle.getTeam(team.id).complete) {
       $('#ladder-heading').textContent = '다섯 명 모두 미션을 받았어요!';
-      $('#ladder-description').textContent = '실제 미션과 팀장 정보는 운영자용 개인 티켓에만 표시됩니다.';
+      $('#ladder-description').textContent = '스페셜 미션 당첨자와 팀장을 공개했습니다. 실제 미션 내용은 티켓에서 확인하세요.';
       $('#ladder-next-button').hidden = false;
       $('#ladder-next-button').textContent = raffle.activeTeamIndex === 2 ? '세 팀 최종 티켓 보기' : '팀 티켓 완성 · 다음 팀으로';
       status.textContent = '팀의 블라인드 배정이 완료됐습니다.';
@@ -813,15 +873,22 @@ function createFinalSummary(team) {
   team.members.forEach((id) => {
     const match = team.matches.find((entry) => entry.participantId === id);
     const row = document.createElement('li');
+    row.className = (match?.missionType === 'special' ? 'is-special ' : '')
+      + (match?.isTeamLeader ? 'is-leader' : '');
     const participant = document.createElement('strong');
-    participant.textContent = id;
+    participant.textContent = match?.isTeamLeader ? '♛ ' + id : id;
+    if (match?.isTeamLeader) participant.className = 'is-leader';
     const mission = document.createElement('span');
-    mission.textContent = match ? '→ ' + missionSlotLabel(match.missionIndex) : '배정 대기';
+    mission.textContent = match
+      ? (match.missionType === 'special' ? 'SPECIAL MISSION' : 'NORMAL MISSION')
+        + ' · ' + missionSlotLabel(match.missionIndex)
+        + (match.isTeamLeader ? ' · TEAM LEADER' : '')
+      : '배정 대기';
     row.append(participant, mission);
     assignments.append(row);
   });
   const note = document.createElement('p');
-  note.textContent = '미션 내용과 팀장 정보는 운영자용 개인 티켓에서 확인합니다.';
+  note.textContent = '스페셜 미션과 팀장 당첨자를 공개했습니다. 실제 미션 내용은 개인 티켓에만 표시됩니다.';
   article.append(heading, assignments, note);
   return article;
 }
@@ -833,7 +900,7 @@ function showFinal() {
   container.replaceChildren();
   raffle.teams.forEach((team) => container.append(createFinalSummary(team)));
   $('#footer-caption').textContent = 'THREE TEAMS / BLIND RESULTS COMPLETE';
-  status.textContent = '세 팀의 블라인드 배정이 끝났습니다. 운영자용 티켓 출력 화면에서 개인 티켓을 처리하세요.';
+  status.textContent = '세 팀의 추첨이 끝났습니다. 스페셜 미션 당첨자와 팀장은 공개되며 실제 미션 내용은 봉인되어 있습니다.';
   focusHeading('#final-heading');
 }
 
@@ -859,6 +926,68 @@ function exportOperatorData() {
     status.textContent = '운영자 기기로 전달할 파일을 저장했습니다. 실제 미션과 팀장 정보가 포함되어 있습니다.';
   } catch (error) { status.textContent = error.message; }
   finally { button.disabled = false; }
+}
+
+async function downloadCompleteResults() {
+  const button = $('#download-complete-results-button');
+  if (button.disabled) return;
+  button.disabled = true;
+  try {
+    const results = raffle.exportResults();
+    if (results.participants.length !== 15 || results.teams.length !== 3
+      || results.teams.some((team) => team.members.length !== 5)) {
+      throw new Error('최종 참가자 15명과 팀별 결과를 확인할 수 없습니다.');
+    }
+    const exporter = window.EverlandTicketExport;
+    if (!exporter) throw new Error('티켓 이미지 생성기를 불러오지 못했습니다. 새로고침한 뒤 다시 시도하세요.');
+    const logoDataUri = await exporter.loadLogoDataUri();
+    const entries = [{
+      name: 'Everland_MT_Results.json',
+      blob: new Blob([JSON.stringify(results, null, 2)], { type: 'application/json;charset=utf-8' }),
+    }];
+    let ticketCount = 0;
+    for (const resultTeam of results.teams) {
+      const team = {
+        id: resultTeam.teamId,
+        teamNumber: resultTeam.teamNumber,
+        label: resultTeam.label,
+        difficulty: resultTeam.difficulty === 'HIGH' ? '상' : '중',
+        ride: {
+          name: resultTeam.ride.name,
+          tag: resultTeam.ride.tag,
+        },
+        members: resultTeam.members.map((member) => member.id),
+      };
+      for (const member of resultTeam.members) {
+        const ticket = {
+          team,
+          assignment: {
+            participantId: member.id,
+            missionIndex: member.missionIndex,
+            missionType: member.missionType === 'SPECIAL' ? 'special' : 'general',
+            missionText: member.missionText,
+            isTeamLeader: member.isLeader,
+            ticketNumber: member.ticketNumber,
+          },
+        };
+        const png = await exporter.pngBlob(ticket, logoDataUri);
+        entries.push({ name: 'Tickets/' + exporter.ticketFileName(ticket), blob: png });
+        ticketCount += 1;
+        status.textContent = '최종 결과와 티켓 ZIP을 준비하는 중입니다. PNG ' + ticketCount + '/15';
+      }
+    }
+    if (ticketCount !== 15 || entries.length !== 16) throw new Error('ZIP에는 결과 JSON 1개와 티켓 PNG 15개가 있어야 합니다.');
+    const zip = await exporter.buildZip(entries);
+    for (const resultTeam of results.teams) {
+      resultTeam.members.forEach((member) => raffle.markTicketCreated(resultTeam.teamId, member.id));
+    }
+    downloadBlob(zip, 'Everland_MT_Complete.zip');
+    status.textContent = 'Everland_MT_Complete.zip 저장을 시작했습니다. JSON 1개와 개인 티켓 PNG 15개가 들어 있습니다.';
+  } catch (error) {
+    status.textContent = (error?.message || 'ZIP을 만들지 못했습니다.') + ' 다시 시도해 주세요.';
+  } finally {
+    button.disabled = false;
+  }
 }
 
 const sound = {
@@ -932,6 +1061,7 @@ $('#mission-draw-button').addEventListener('click', drawMissions);
 $('#mission-next-button').addEventListener('click', startLadder);
 $('#ladder-next-button').addEventListener('click', advanceAfterLadder);
 $('#export-operator-data-button').addEventListener('click', exportOperatorData);
+$('#download-complete-results-button').addEventListener('click', downloadCompleteResults);
 $('#brand-home').addEventListener('click', (event) => { event.preventDefault(); showHome(); });
 skipButton.addEventListener('click', () => {
   if (stage === 'draw') showReveal(true);

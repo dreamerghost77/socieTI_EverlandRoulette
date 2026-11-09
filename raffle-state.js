@@ -21,6 +21,7 @@
     return {
       version: 3,
       activeTeamIndex: 0,
+      completedAt: null,
       teams: data.teams.map((config) => ({
         id: config.id,
         rideTheme: null,
@@ -187,6 +188,7 @@
           assignments,
           leader: team.leader,
           complete: team.complete,
+          ladder: team.ladder ? JSON.parse(JSON.stringify(team.ladder)) : null,
         };
       });
     }
@@ -198,6 +200,95 @@
         version: 1,
         exportedAt: new Date().toISOString(),
         teams: this.getOperatorTeams(),
+      };
+    }
+
+    exportResults() {
+      if (!this.allComplete) throw new Error('세 팀의 사다리 추첨을 모두 완료한 뒤 최종 결과를 만들 수 있습니다.');
+      const operatorTeams = this.getOperatorTeams();
+      if (operatorTeams.length !== 3 || operatorTeams.some((team) => !team.complete || team.members.length !== 5
+        || team.assignments.length !== 5 || !team.ladder || !team.leader)) {
+        throw new Error('팀 구성, 사다리 또는 팀장 결과가 완성되지 않았습니다.');
+      }
+
+      const teams = operatorTeams.map((team) => {
+        const members = team.members.map((participantId) => {
+          const assignment = team.assignments.find((entry) => entry.participantId === participantId);
+          const participant = participantById.get(participantId);
+          if (!assignment || !participant) throw new Error('참가자와 미션 결과가 일치하지 않습니다.');
+          return {
+            id: participantId,
+            initials: participant.initials,
+            missionId: assignment.missionId,
+            missionType: assignment.missionType === 'special' ? 'SPECIAL' : 'NORMAL',
+            missionText: assignment.missionText,
+            missionIndex: assignment.missionIndex,
+            missionSlot: String.fromCharCode(65 + assignment.missionIndex),
+            isLeader: assignment.isTeamLeader,
+            ticketNumber: assignment.ticketNumber,
+          };
+        });
+        const specialCount = members.filter((member) => member.missionType === 'SPECIAL').length;
+        const leaderCount = members.filter((member) => member.isLeader).length;
+        if (specialCount !== 1 || leaderCount !== 1
+          || members.find((member) => member.missionType === 'SPECIAL')?.id !== team.leader
+          || members.some((member) => !member.missionId || !member.missionText || member.missionIndex < 0 || member.missionIndex > 4)) {
+          throw new Error('스페셜 미션, 팀장 또는 참가자별 미션 결과가 일치하지 않습니다.');
+        }
+
+        const ladderAssignments = members.map((member) => ({
+          participantId: member.id,
+          startColumn: team.members.indexOf(member.id),
+          destinationSlot: member.missionIndex,
+          missionSlot: member.missionSlot,
+          missionId: member.missionId,
+          missionType: member.missionType,
+          isLeader: member.isLeader,
+        }));
+        const connections = team.ladder.rows.flatMap((rungs, rowIndex) => rungs.map((leftColumn) => ({
+          row: rowIndex + 1,
+          fromSlot: String.fromCharCode(65 + leftColumn),
+          toSlot: String.fromCharCode(66 + leftColumn),
+        })));
+
+        return {
+          teamId: team.id,
+          teamNumber: team.teamNumber,
+          label: team.label,
+          difficulty: team.difficulty === '상' ? 'HIGH' : 'MEDIUM',
+          ride: { id: team.ride.theme, name: team.ride.name, tag: team.ride.tag },
+          leaderId: team.leader,
+          members,
+          ladder: {
+            columns: team.ladder.columns,
+            rows: team.ladder.rows.map((row) => row.slice()),
+            connections,
+            assignments: ladderAssignments,
+          },
+        };
+      });
+
+      const participants = teams.flatMap((team) => team.members.map((member) => ({
+        ...member,
+        teamId: team.teamId,
+        teamNumber: team.teamNumber,
+        difficulty: team.difficulty,
+        ride: team.ride.name,
+      })));
+      if (participants.length !== 15 || new Set(participants.map((participant) => participant.id)).size !== 15) {
+        throw new Error('최종 참가자 명단은 중복 없이 15명이어야 합니다.');
+      }
+      if (!this.state.completedAt) {
+        this.state.completedAt = new Date().toISOString();
+        this._save();
+      }
+      return {
+        eventName: 'EVERLAND MT',
+        completedAt: this.state.completedAt,
+        participantCount: participants.length,
+        teamCount: teams.length,
+        participants,
+        teams,
       };
     }
 
@@ -237,7 +328,13 @@
       const team = this._team(teamId);
       if (!team.ladder || !team.missionIds) throw new Error('사다리를 먼저 생성하세요.');
       const existing = team.matches.find((match) => match.participantId === participantId);
-      if (existing) return { participantId, missionIndex: existing.missionIndex, route: this.traceParticipant(teamId, participantId) };
+      if (existing) return {
+        participantId,
+        missionIndex: existing.missionIndex,
+        missionType: existing.missionType,
+        isTeamLeader: participantId === team.leader,
+        route: this.traceParticipant(teamId, participantId),
+      };
       if (team.complete) throw new Error('모든 참가자의 미션이 이미 확정되었습니다.');
       const route = this.traceParticipant(teamId, participantId);
       if (team.matches.some((match) => match.missionIndex === route.destination)) throw new Error('이 미션은 이미 다른 참가자에게 배정되었습니다.');
@@ -255,7 +352,13 @@
       if (mission.type === 'special') team.leader = participantId;
       team.complete = team.matches.length === 5;
       this._save();
-      return { participantId, missionIndex: match.missionIndex, route };
+      return {
+        participantId,
+        missionIndex: match.missionIndex,
+        missionType: match.missionType,
+        isTeamLeader: participantId === team.leader,
+        route,
+      };
     }
 
     advanceTeam() {
@@ -297,16 +400,24 @@
 
     _publicTeam(team) {
       const ride = rideByTheme.get(team.rideTheme) || null;
-      const matches = team.matches.map((match) => ({ participantId: match.participantId, missionIndex: match.missionIndex }));
+      const matches = team.matches.map((match) => ({
+        participantId: match.participantId,
+        missionIndex: match.missionIndex,
+        missionType: match.missionType,
+        isTeamLeader: match.participantId === team.leader,
+      }));
+      const missionSlots = team.missionIds
+        ? team.missionIds.map((id) => ({ type: missionById.get(id)?.type || null }))
+        : [];
       const publicState = JSON.parse(JSON.stringify(team));
       delete publicState.missionIds;
-      delete publicState.leader;
       publicState.matches = matches;
       return {
         ...publicState,
         ride,
         config: this._config(team.id),
         missionCount: team.missionIds ? team.missionIds.length : 0,
+        missionSlots,
         matchedCount: team.matches.length,
         matches,
         phase: this.getPhase(team.id),
@@ -424,6 +535,9 @@
       state.activeTeamIndex = Number.isSafeInteger(saved.activeTeamIndex)
         ? Math.max(0, Math.min(saved.activeTeamIndex, maxIndex))
         : 0;
+      state.completedAt = typeof saved.completedAt === 'string' && !Number.isNaN(Date.parse(saved.completedAt))
+        ? saved.completedAt
+        : null;
       return state;
     }
 
